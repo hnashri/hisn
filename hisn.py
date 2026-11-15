@@ -32,8 +32,7 @@ arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"
 leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i"}
 
 def normalize_with_mask(text):
-    """Decode Arabizi + leetspeak. Also returns which letters were changed,
-    so we can ignore 'names' that are mostly made of decoded symbols."""
+    # changed = which letters came from a number or symbol
     text = text.lower()
     out, changed = [], []
     i = 0
@@ -139,7 +138,7 @@ def load_keyboard_names():
 keyboard_names = load_keyboard_names()
 print("Hisn loaded", len(keyboard_names), "names typed on the wrong keyboard")
 
-# Arabic labels for each wordlist (formal, neutral wording)
+# arabic names for each list
 ARABIC_LABELS = {
     "nicknames": "اسم تدليل",
     "tribes": "اسم قبيلة أو عائلة",
@@ -149,9 +148,8 @@ ARABIC_LABELS = {
 }
 
 def check_pwned(password):
-    """How many times this password appeared in real data breaches (Have I Been Pwned).
-    Uses k-anonymity: only the first 5 characters of the SHA-1 hash leave the computer,
-    never the password itself. Returns None if there is no internet."""
+    # k-anonymity: only the first 5 chars of the sha1 hash are sent
+    # returns None when there's no internet
     sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
     prefix, suffix = sha1[:5], sha1[5:]
     request = urllib.request.Request(
@@ -169,10 +167,9 @@ def check_pwned(password):
 
 
 def human_time_ar(seconds):
-    """Turn seconds into short Arabic text."""
     if seconds < 1:
         return "أقل من ثانية"
-    # (size of the unit, singular, plural used for 3 to 10)
+    # (size, singular, plural for 3-10)
     units = [(60, "ثانية", "ثوانٍ"), (60, "دقيقة", "دقائق"), (24, "ساعة", "ساعات"),
              (30, "يوم", "أيام"), (12, "شهر", "أشهر"), (100, "سنة", "سنوات")]
     value = seconds
@@ -185,9 +182,8 @@ def human_time_ar(seconds):
 
 
 def estimate_crack_seconds(password, known_parts, pwned):
-    """Rough time to guess the password with a fast offline attack (10 billion guesses/second).
-    known_parts = words/years/sequences we found: an attacker tries those from lists first,
-    so they count as one choice from a list instead of random characters."""
+    # offline attack, 10 billion guesses per second
+    # words/years we found count as one pick from a list, not random letters
     if pwned:
         return 0
     charset = 0
@@ -206,13 +202,13 @@ def estimate_crack_seconds(password, known_parts, pwned):
     return guesses / 10_000_000_000
 
 
-# why each kind of word is dangerous (shown after the warning)
+# reason shown after each warning
 WHY = {
-    "nicknames": "أسماء التدليل يعرفها الأهل والأصدقاء وتظهر كثيرًا في الحسابات.",
-    "tribes": "اسم العائلة أو القبيلة معروف للجميع ويظهر في البريد والحسابات.",
-    "religious": "العبارات الدينية الشائعة موجودة في قوائم التخمين التي يستخدمها المخترقون.",
-    "clubs": "أسماء الأندية وألقابها من أول ما يجربه المخترقون، خصوصًا مع سنة بطولة.",
-    "cities": "اسم المدينة مرتبط بالشخص ويسهل معرفته من حساباته.",
+    "nicknames": "اسم التدليل يعرفه المقربون ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
+    "tribes": "اسم العائلة أو القبيلة معروف ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
+    "religious": "العبارات الدينية يستخدمها كثيرون، فهي من أول ما يجربه المخترق.",
+    "clubs": "أسماء الأندية وألقابها من أول ما يجربه المخترق، خصوصًا مع سنة بطولة.",
+    "cities": "اسم المدينة مرتبط بالشخص، فيسهل على المخترق تخمينه.",
 }
 
 
@@ -225,7 +221,7 @@ def level_for(score):
 
 
 def analyze(password):
-    """Check one password and return the score + a list of findings."""
+
     findings = []   # each one: severity, English message, Arabic message
 
     def add(severity, en, ar):
@@ -308,8 +304,7 @@ def analyze(password):
         if best:
             found_words[key] = best
 
-    # if a generic name overlaps a more specific word (tribe, nickname, city...),
-    # keep the specific one because its warning is more useful
+    # if the name is part of a tribe/nickname/city we found, use the more specific one
     def overlaps(a, b):
         i, j = normalized.find(a), normalized.find(b)
         return i < j + len(b) and j < i + len(a)
@@ -323,7 +318,7 @@ def analyze(password):
         if keys in low:
             if found_keyboard is None or len(keys) > len(found_keyboard[0]):
                 found_keyboard = (keys, arabic)
-    # skip it if it is just a piece of a word we already found (like "hali" in "madkhali")
+    # ignore it if it's inside a word we already found (hali in madkhali)
     if found_keyboard:
         known = list(found_words.values()) + ([found_name] if found_name else [])
         if any(found_keyboard[0] in w for w in known):
