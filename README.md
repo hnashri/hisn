@@ -7,6 +7,8 @@ Any Arab attacker reads it as **Ahmed, born in 1415 AH** and guesses it in less 
 
 Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 
+**Try it online:** [hisn-sa.streamlit.app](https://hisn-sa.streamlit.app) (it's a demo, so test a password similar to yours, not your real one)
+
 ---
 
 ## What Hisn detects
