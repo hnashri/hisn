@@ -21,7 +21,8 @@ CASES = [
     ("Bismillah2020",         ["religious phrase -> bismillah", "year -> 2020"], 50),
     ("N@ssr7",                ["football club -> nassr"], 50),
     ("AlZaeem2019",           ["football club -> alzaeem", "won the"], 30),
-    ("Jeddah#123",            ["Saudi city -> jeddah"], 70),
+    ("Jeddah#123",            ["Saudi city -> jeddah", "short number sequence -> 123"], 60),
+    ("Sara@987x",             ["short number sequence -> 987"], 70),
     ("12345678",              ["easy sequence"], 20),
     ("qwerty2024",            ["easy sequence", "year -> 2024"], 20),
     ("aaaa1111",              ["repeated characters"], 40),
@@ -50,6 +51,12 @@ class TestHisn(unittest.TestCase):
             with self.subTest(password=password):
                 result = hisn.analyze(password)
                 self.assertGreaterEqual(result["score"], 70)
+
+    def test_year_is_not_a_short_sequence(self):
+        # 2012 has "012" inside but it's a year
+        result = hisn.analyze("Mountain#2012")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertNotIn("short number sequence", text)
 
     def test_years_are_not_arabizi(self):
         # 2024 is a year, not "a0a4" letters

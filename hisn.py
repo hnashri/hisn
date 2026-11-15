@@ -287,6 +287,19 @@ def analyze(password):
             if chunk in low or chunk[::-1] in low:
                 found_sequence = chunk
 
+    # short number runs like 123 or 987 (but not inside a year like 2012)
+    short_sequence = None
+    if not found_sequence:
+        digits_only = low
+        if found_year:
+            digits_only = digits_only.replace(found_year, " ")
+        for i in range(8):
+            chunk = "0123456789"[i:i+3]
+            if chunk in digits_only:
+                short_sequence = chunk
+            elif chunk[::-1] in digits_only:
+                short_sequence = chunk[::-1]
+
     # search for repeated characters
     found_repeat = None
     for i in range(len(password) - 3):
@@ -349,6 +362,10 @@ def analyze(password):
         score -= 20
         add("red", "Contains an easy sequence -> " + found_sequence,
             "تحتوي كلمة المرور على تسلسل سهل (" + found_sequence + ").")
+    if short_sequence:
+        score -= 10
+        add("yellow", "Contains a short number sequence -> " + short_sequence,
+            "تحتوي كلمة المرور على تسلسل أرقام قصير (" + short_sequence + ")، وهو من أشهر الإضافات التي يجربها المخترق.")
     if found_repeat:
         score -= 20
         add("red", "Contains repeated characters -> " + found_repeat,
