@@ -16,7 +16,7 @@ Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 | | Example | What Hisn sees |
 |---|---|---|
 | Arabic names (35k+) | `Sara@2005` | name + year |
-| Arabizi (7 = ح, 3 = ع ...) | `A7med`, `3bdullah` | Ahmed, Abdullah |
+| Arabizi (7 = ح, 3 = ع ...) | `A7med`, `3bdullah`, `3omar` | Ahmed, Abdullah, Omar |
 | Hijri and Gregorian years | `1426`, `2008`, `Sara05` | a Hijri year, a Gregorian year, a short year |
 | Full birth dates | `01051426` | day + month + year |
 | Nicknames | `3bood`, `Fahood`, `Lulu` | Saudi nicknames |
@@ -41,8 +41,11 @@ It also shows:
 
 1. Every part Hisn finds (a name, a year, a club...) counts as **one pick from a list**, using the real size of that list. A name is one guess out of 35k names, not 5 random letters.
 2. The rest of the password is guessed character by character (English letters, Arabic letters, digits and symbols).
-3. The attacker is assumed to try **10 billion guesses per second** (a fast offline attack).
-4. The score follows the time: less than 1 second is 0, about 30 thousand years is 100. Below 40 is weak, 70 and above is strong.
+3. The time is shown for 3 attacks:
+   - **online**, where the site limits tries (100 per hour)
+   - **offline with a weak hash** like MD5 on GPUs (10 billion per second), the worst case
+   - **offline with a strong hash** like bcrypt (10 thousand per second)
+4. The score follows the worst case: less than 1 second is 0, about 30 thousand years is 100. Below 40 is weak, 70 and above is strong.
 
 This is why a long passphrase like `purple-kettle-drift-mango` is strong even without capitals or digits, which matches NIST.
 
@@ -61,9 +64,9 @@ A 2018 study, [*Your Culture is in Your Password*](https://elmi.hbku.edu.qa/en/p
 
 What I found when I read the official documents:
 
-- **NIST SP 800-63B**: minimum 8 characters, 15 recommended, no forced character mixing, no forced periodic changes.
+- **NIST SP 800-63B-4 (2025)**: minimum 15 characters when the password is the only factor, 8 only with multi-factor authentication. Composition rules (forcing a mix of character types) must not be imposed, and no forced periodic changes.
 - **NCA Essential Cybersecurity Controls (2-2-3-1)**: every organization must have a password policy (length, complexity, expiry, lockout) but the control does not set fixed numbers.
-- **SAMA Cyber Security Framework (3.1.5)**: requires a strong password policy and locks access after 3 wrong attempts.
+- **SAMA Cyber Security Framework (3.1.5)**: requires organizations to have a strong password policy, including revoking access after 3 consecutive wrong attempts.
 
 So Hisn uses NIST for the numbers and explains the Saudi requirements as notes.
 
@@ -113,6 +116,7 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 
 ## Future ideas
 
+- Learn how parts are usually ordered (name then symbol then year) from real data, using a probabilistic grammar (PCFG).
 - Compare Hisn with [zxcvbn](https://github.com/dropbox/zxcvbn) on a set of Saudi style passwords I write myself.
 - Support more Arab countries (clubs, cities and Arabizi styles from Egypt, the Gulf, the Maghreb).
 - Grow the nickname and family name lists.

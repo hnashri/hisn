@@ -47,8 +47,13 @@ arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"
 # and swap letters with symbols like @ = a and 0 = o
 leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i", "4": "a"}
 
+# 3 (ع) and 2 (ء) don't always become a
+# 3omar is omar and 3isa is eisa so I try other choices too
+# ("" means the number just disappears)
+arabizi_choices = [{}, {"3": "e", "2": "e"}, {"3": "o", "2": "o"}, {"3": "", "2": ""}]
 
-def normalize_with_mask(text):
+
+def normalize_with_mask(text, choice=None):
     # returns the decoded text + a list that says which letters were decoded
     # (I need it later so a "name" made only of symbols doesn't count)
     # + a list that says where each letter was in the original password
@@ -72,14 +77,16 @@ def normalize_with_mask(text):
                 continue
 
         ch = text[i]
-        if ch in leet:
+        if choice and ch in choice:
+            new = choice[ch]
+        elif ch in leet:
             new = leet[ch]
         elif ch in arabizi:
             new = arabizi[ch]
         else:
             new = None
 
-        if new:
+        if new is not None:
             for letter in new:
                 out.append(letter)
                 changed.append(True)
@@ -311,7 +318,8 @@ def human_time_ar(seconds):
     return "قرون"
 
 
-def estimate_crack_seconds(password, known_parts, pwned):
+def estimate_guesses(password, known_parts, pwned):
+    # how many guesses the hacker needs
     # a leaked password is guessed right away
     if pwned:
         return 0
@@ -339,9 +347,18 @@ def estimate_crack_seconds(password, known_parts, pwned):
         guesses *= list_size
     if random_length > 0:
         guesses *= charset ** random_length
+    return guesses
 
-    # a strong computer tries about 10 billion passwords per second
-    return guesses / 10_000_000_000
+
+# the time depends on how the hacker attacks
+# online: the site slows them down (I assume 100 tries per hour)
+# fast: they stole a database with a weak hash like MD5 (10 billion per second on GPUs)
+# slow: the database uses a strong hash like bcrypt (10 thousand per second)
+ATTACKS = {
+    "online": 100 / 3600,
+    "fast": 10_000_000_000,
+    "slow": 10_000,
+}
 
 
 # small helpers
@@ -446,7 +463,7 @@ def analyze(password):
 
     if length < 8:
         add("red", "Too short (less than 8 characters)",
-            "كلمة المرور قصيرة؛ يُنصح بألا تقل عن 12 حرفًا.")
+            "كلمة المرور قصيرة جدًا؛ حتى مع التحقق الثنائي لا يقبل المعيار العالمي (NIST) أقل من 8 أحرف.")
 
     # NIST cares about length more than mixing types
     # so I only show this tip when the password is not long
@@ -474,30 +491,37 @@ def analyze(password):
     # and it has to be a whole word (mang inside mango is not a name)
     # (if 2 names fit I take the one with less decoded letters then the longer one
     # so Mansour@ gives mansour not mansoura)
+    # I search every Arabizi choice (3 = a then e then o then nothing)
     found_name = None
     found_decoded = 0
-    for n in names:
-        if len(n) < 4:
-            continue
-        pos = normalized.find(n)
-        if pos == -1:
-            continue
-        if not whole_word(normalized, changed, origin, password, pos, len(n)):
-            continue
-        # count decoded characters of the password not letters
-        # (5 becomes kh but it is still 1 character)
-        decoded = set()
-        for k in range(pos, pos + len(n)):
-            if changed[k]:
-                decoded.add(origin[k])
-        decoded_letters = len(decoded)
-        if decoded_letters > 1:
-            continue
-        if found_name is None or decoded_letters < found_decoded:
-            found_name = n
-            found_decoded = decoded_letters
-        elif decoded_letters == found_decoded and len(n) > len(found_name):
-            found_name = n
+    for choice in arabizi_choices:
+        text, text_changed, text_origin = normalize_with_mask(password, choice)
+        for n in names:
+            if len(n) < 4:
+                continue
+            pos = text.find(n)
+            if pos == -1:
+                continue
+            if not whole_word(text, text_changed, text_origin, password, pos, len(n)):
+                continue
+            # count decoded characters of the password not letters
+            # (5 becomes kh but it is still 1 character)
+            decoded = set()
+            for k in range(pos, pos + len(n)):
+                if text_changed[k]:
+                    decoded.add(text_origin[k])
+            # in 3omar the 3 is gone so it has no letter but it was still decoded
+            start = text_origin[pos]
+            if start > 0 and choice.get(password[start - 1].lower()) == "":
+                decoded.add(start - 1)
+            decoded_letters = len(decoded)
+            if decoded_letters > 1:
+                continue
+            if found_name is None or decoded_letters < found_decoded:
+                found_name = n
+                found_decoded = decoded_letters
+            elif decoded_letters == found_decoded and len(n) > len(found_name):
+                found_name = n
 
     # a full birth date like 01051426
     found_date = find_date(password)
@@ -567,12 +591,19 @@ def analyze(password):
 
     # my lists: nicknames families clubs cities
     found_words = {}
+    # (a whole word too like names so abha is not found inside kabhab)
     for key in wordlists:
         best = None
         for w in wordlists[key]:
-            if len(w) >= 3 and w in normalized:
-                if best is None or len(w) > len(best):
-                    best = w
+            if len(w) < 3:
+                continue
+            pos = normalized.find(w)
+            if pos == -1:
+                continue
+            if not whole_word(normalized, changed, origin, password, pos, len(w)):
+                continue
+            if best is None or len(w) > len(best):
+                best = w
         if best:
             found_words[key] = best
 
@@ -611,9 +642,8 @@ def analyze(password):
     # warnings
 
     if found_name:
-        pos = normalized.find(found_name)
         note = ""
-        if any(changed[pos:pos + len(found_name)]):
+        if found_decoded > 0:
             note = " حتى مع استبدال بعض الحروف بأرقام أو رموز، فهذه الحيلة معروفة."
         add("red", "Contains a common name -> " + found_name,
             "تحتوي كلمة المرور على اسم شائع (" + found_name + ")." + note +
@@ -726,13 +756,18 @@ def analyze(password):
         known_parts.append((found_phone.group(), 1000000))
     if found_sequence:
         known_parts.append((found_sequence, 100))
+    if short_sequence:
+        # 123 and 987 are some of the first endings a hacker adds
+        known_parts.append((short_sequence, 20))
     if found_repeat:
         known_parts.append((found_repeat, 100))
     if found_keyboard:
         known_parts.append((found_keyboard[0], len(keyboard_names)))
-    crack_seconds = estimate_crack_seconds(password, known_parts, pwned)
+    guesses = estimate_guesses(password, known_parts, pwned)
+    crack_seconds = guesses / ATTACKS["fast"]
 
     # the score and the level both come from the time to crack
+    # I use the fast attack because it is the worst case
     score = score_from_seconds(crack_seconds)
 
     # a personal word + a year is the first thing a hacker tries
@@ -755,14 +790,16 @@ def analyze(password):
     # blue notes (standards)
 
     if length < 15:
-        add("blue", "NIST: minimum 8, recommended 15 characters",
-            "المعيار العالمي (NIST) يشترط 8 أحرف على الأقل ويوصي بـ15 حرفًا، "
+        add("blue", "NIST (2025): minimum 15 characters, or 8 with two-factor authentication",
+            "المعيار العالمي (NIST SP 800-63B-4، 2025) يشترط 15 حرفًا على الأقل إذا كانت كلمة المرور "
+            "وحدها تحمي الحساب، ويسمح بـ8 أحرف فقط مع التحقق الثنائي، "
             "وطول كلمة المرور الحالية " + str(length) + " أحرف.")
 
     if has_arabic:
-        add("blue", "SAMA: bank accounts lock after 3 wrong attempts",
-            "وفق إطار الأمن السيبراني للبنك المركزي السعودي (ساما)، يُقفل الحساب البنكي "
-            "بعد 3 محاولات خاطئة، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة إلى قفل الحساب.")
+        add("blue", "SAMA: organizations must revoke access after 3 wrong attempts",
+            "يطلب إطار الأمن السيبراني للبنك المركزي السعودي (ساما) من الجهات وضع سياسة "
+            "توقف الوصول بعد 3 محاولات خاطئة متتالية، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة "
+            "إلى إيقاف الحساب.")
 
     if score >= 70:
         add("blue", "NCA: entities must set strong password policies",
@@ -775,6 +812,11 @@ def analyze(password):
         "color": color,
         "level": level,
         "crack_time": human_time_ar(crack_seconds),
+        "crack_times": {
+            "online": human_time_ar(guesses / ATTACKS["online"]),
+            "fast": human_time_ar(crack_seconds),
+            "slow": human_time_ar(guesses / ATTACKS["slow"]),
+        },
         "length": length,
         "findings": findings,
     }

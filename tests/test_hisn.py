@@ -110,6 +110,28 @@ class TestHisn(unittest.TestCase):
         text = " | ".join(f["en"] for f in result["findings"])
         self.assertNotIn("sequence", text)
 
+    # second review
+
+    def test_arabizi_3_has_more_than_one_letter(self):
+        # 3omar is omar and 3isa is eisa not aomar and aisa
+        text = " | ".join(f["en"] for f in hisn.analyze("3omar@2001")["findings"])
+        self.assertIn("omar", text)
+        text = " | ".join(f["en"] for f in hisn.analyze("3isa1420")["findings"])
+        self.assertIn("common name -> eisa", text)
+
+    def test_list_words_must_be_whole_words(self):
+        # abha is a city but kabhab is not abha
+        text = " | ".join(f["en"] for f in hisn.analyze("Kabhab#Night!7")["findings"])
+        self.assertNotIn("Saudi city", text)
+
+    def test_three_attack_times(self):
+        times = hisn.analyze("A7med_1415")["crack_times"]
+        self.assertEqual(sorted(times), ["fast", "online", "slow"])
+
+    def test_nist_2025_note(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Sara@1426")["findings"])
+        self.assertIn("NIST (2025): minimum 15 characters", text)
+
 
 if __name__ == "__main__":
     unittest.main()
