@@ -4,6 +4,9 @@
 import streamlit as st
 from hisn import analyze
 
+# the name i want on the browser tab instead of Streamlit
+st.set_page_config(page_title="حصن")
+
 # Arabic font right to left and the pattern bar at the top
 st.markdown("""
 <style>
