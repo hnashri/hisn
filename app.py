@@ -1,7 +1,10 @@
+# Hisn interface (Streamlit)
+# run it with: python -m streamlit run app.py
+
 import streamlit as st
 from hisn import analyze
 
-# style: font, right-to-left, centering, and the Saudi pattern bar
+# Arabic font, right to left, and the pattern bar at the top
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
@@ -24,11 +27,12 @@ header[data-testid="stHeader"] {
 </style>
 """, unsafe_allow_html=True)
 
-# remember which page we are on (welcome or check)
+# streamlit runs the whole file again on every click,
+# so I keep the current page in session_state
 if "page" not in st.session_state:
     st.session_state.page = "welcome"
 
-# welcome page
+# ---------- welcome page ----------
 if st.session_state.page == "welcome":
     st.markdown("""
     <div class="center">
@@ -44,7 +48,7 @@ if st.session_state.page == "welcome":
             st.session_state.page = "check"
             st.rerun()
 
-# check page
+# ---------- check page ----------
 else:
     st.title("حصن")
     password = st.text_input("كلمة المرور", type="password")
@@ -53,17 +57,28 @@ else:
     if st.button("افحص") and password:
         result = analyze(password)
 
-        color = {"red": "red", "yellow": "orange", "green": "green"}[result["color"]]
+        # streamlit has no "yellow" text color, so orange is used instead
+        if result["color"] == "yellow":
+            color = "orange"
+        else:
+            color = result["color"]
         col1, col2 = st.columns(2)
         col1.metric("الدرجة", f"{result['score']} / 100")
         col2.metric("الوقت المتوقع للكسر", result["crack_time"])
         st.markdown(f"**المستوى:** :{color}[{result['level']}]")
         st.progress(result["score"] / 100)
 
-        if not [f for f in result["findings"] if f["severity"] != "blue"]:
+        # problems (red/yellow) first, blue notes after them
+        problems = []
+        infos = []
+        for f in result["findings"]:
+            if f["severity"] == "blue":
+                infos.append(f)
+            else:
+                problems.append(f)
+
+        if not problems:
             st.success("لم تُكتشف أي مشكلة واضحة.")
-        problems = [f for f in result["findings"] if f["severity"] != "blue"]
-        infos = [f for f in result["findings"] if f["severity"] == "blue"]
 
         for f in problems:
             if f["severity"] == "red":
@@ -84,5 +99,6 @@ else:
 - **البنك المركزي السعودي (الضابط 3.1.5):** يشترط سياسة قوية لكلمات المرور، ويُقفل الحساب بعد 3 محاولات خاطئة.
 """)
 
+# privacy note at the bottom of the welcome page
 if st.session_state.page == "welcome":
     st.caption("لا يحفظ حصن كلمة المرور ولا يسجّلها.")
