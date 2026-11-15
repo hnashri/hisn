@@ -1,0 +1,248 @@
+{
+  "hilal": {
+    "names": [
+      "hilal",
+      "alhilal",
+      "zaeem",
+      "alzaeem"
+    ],
+    "titles": {
+      "1961": "Saudi League",
+      "1962": "Saudi League",
+      "1964": "Saudi League",
+      "1965": "Saudi League",
+      "1976": "Saudi League",
+      "1977": "Saudi League",
+      "1978": "Saudi League",
+      "1979": "Saudi League",
+      "1984": "Saudi League",
+      "1985": "Saudi League + Saudi League",
+      "1986": "Saudi League",
+      "1987": "Saudi League",
+      "1988": "Saudi League",
+      "1989": "Saudi League",
+      "1990": "Saudi League",
+      "1995": "Saudi League",
+      "1996": "Saudi League",
+      "1997": "Saudi League",
+      "1998": "Saudi League",
+      "2001": "Saudi League",
+      "2002": "Saudi League",
+      "2004": "Saudi League",
+      "2005": "Saudi League",
+      "2007": "Saudi League",
+      "2008": "Saudi League",
+      "2009": "Saudi League",
+      "2010": "Saudi League + Saudi League",
+      "2011": "Saudi League",
+      "2016": "Saudi League",
+      "2017": "Saudi League + Saudi League",
+      "2018": "Saudi League",
+      "2019": "Saudi League + AFC Champions League",
+      "2020": "Saudi League + Saudi League",
+      "2021": "Saudi League + Saudi League + AFC Champions League",
+      "2022": "Saudi League",
+      "2023": "Saudi League",
+      "2024": "Saudi League",
+      "1991": "AFC Champions League",
+      "1999": "AFC Champions League",
+      "2000": "AFC Champions League"
+    }
+  },
+  "nassr": {
+    "names": [
+      "nassr",
+      "alnassr",
+      "alalami",
+      "alamy",
+      "aalami"
+    ],
+    "titles": {
+      "1973": "Saudi League",
+      "1974": "Saudi League + Saudi League",
+      "1975": "Saudi League",
+      "1979": "Saudi League",
+      "1980": "Saudi League + Saudi League",
+      "1981": "Saudi League",
+      "1988": "Saudi League",
+      "1989": "Saudi League",
+      "1993": "Saudi League",
+      "1994": "Saudi League + Saudi League",
+      "1995": "Saudi League",
+      "2013": "Saudi League",
+      "2014": "Saudi League + Saudi League",
+      "2015": "Saudi League",
+      "2018": "Saudi League",
+      "2019": "Saudi League",
+      "2025": "Saudi League",
+      "2026": "Saudi League"
+    }
+  },
+  "ittihad": {
+    "names": [
+      "ittihad",
+      "alittihad",
+      "etihad",
+      "ameed",
+      "alameed"
+    ],
+    "titles": {
+      "1958": "Saudi League",
+      "1959": "Saudi League + Saudi League",
+      "1960": "Saudi League + Saudi League",
+      "1961": "Saudi League",
+      "1963": "Saudi League",
+      "1964": "Saudi League",
+      "1981": "Saudi League",
+      "1982": "Saudi League",
+      "1996": "Saudi League",
+      "1997": "Saudi League",
+      "1998": "Saudi League",
+      "1999": "Saudi League + Saudi League",
+      "2000": "Saudi League + Saudi League",
+      "2001": "Saudi League",
+      "2002": "Saudi League",
+      "2003": "Saudi League",
+      "2006": "Saudi League",
+      "2007": "Saudi League",
+      "2008": "Saudi League",
+      "2009": "Saudi League",
+      "2022": "Saudi League",
+      "2023": "Saudi League",
+      "2024": "Saudi League",
+      "2025": "Saudi League",
+      "2004": "AFC Champions League",
+      "2005": "AFC Champions League"
+    }
+  },
+  "ahli": {
+    "names": [
+      "ahli",
+      "alahli",
+      "raqi",
+      "alraqi"
+    ],
+    "titles": {
+      "1962": "Saudi League",
+      "1963": "Saudi League",
+      "1965": "Saudi League",
+      "1966": "Saudi League",
+      "1968": "Saudi League",
+      "1969": "Saudi League",
+      "1970": "Saudi League",
+      "1971": "Saudi League + Saudi League",
+      "1972": "Saudi League + Saudi League",
+      "1973": "Saudi League",
+      "1977": "Saudi League",
+      "1978": "Saudi League",
+      "1983": "Saudi League",
+      "1984": "Saudi League",
+      "2015": "Saudi League",
+      "2016": "Saudi League",
+      "2024": "AFC Champions League",
+      "2025": "AFC Champions League + AFC Champions League",
+      "2026": "AFC Champions League"
+    }
+  },
+  "shabab": {
+    "names": [
+      "shabab",
+      "alshabab",
+      "laith",
+      "allaith"
+    ],
+    "titles": {
+      "1990": "Saudi League",
+      "1991": "Saudi League + Saudi League",
+      "1992": "Saudi League + Saudi League",
+      "1993": "Saudi League",
+      "2003": "Saudi League",
+      "2004": "Saudi League",
+      "2005": "Saudi League",
+      "2006": "Saudi League",
+      "2011": "Saudi League",
+      "2012": "Saudi League"
+    }
+  },
+  "ettifaq": {
+    "names": [
+      "ettifaq",
+      "ittifaq"
+    ],
+    "titles": {
+      "1982": "Saudi League",
+      "1983": "Saudi League",
+      "1986": "Saudi League",
+      "1987": "Saudi League"
+    }
+  },
+  "wehda": {
+    "names": [
+      "wehda",
+      "alwehda"
+    ],
+    "titles": {
+      "1957": "Saudi League",
+      "1958": "Saudi League"
+    }
+  },
+  "fateh": {
+    "names": [
+      "fateh",
+      "alfateh"
+    ],
+    "titles": {
+      "2012": "Saudi League",
+      "2013": "Saudi League"
+    }
+  },
+  "taawoun": {
+    "names": [
+      "taawoun",
+      "taawon"
+    ],
+    "titles": {}
+  },
+  "raed": {
+    "names": [
+      "raed",
+      "alraed"
+    ],
+    "titles": {}
+  },
+  "fayha": {
+    "names": [
+      "fayha",
+      "alfayha"
+    ],
+    "titles": {}
+  },
+  "khaleej": {
+    "names": [
+      "khaleej",
+      "alkhaleej"
+    ],
+    "titles": {}
+  },
+  "qadsiah": {
+    "names": [
+      "qadsiah",
+      "qadsia",
+      "alqadsiah"
+    ],
+    "titles": {}
+  },
+  "okhdood": {
+    "names": [
+      "okhdood",
+      "akhdoud"
+    ],
+    "titles": {}
+  },
+  "riyadh": {
+    "names": [
+      "riyadhclub"
+    ],
+    "titles": {}
+  }
+}

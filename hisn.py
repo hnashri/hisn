@@ -52,7 +52,6 @@ WORDLISTS = {
     "nicknames": ("nicknames.txt", "a nickname", 30),
     "tribes":    ("tribes.txt", "a tribe or family name", 30),
     "religious": ("religious.txt", "a common religious phrase", 20),
-    "clubs":     ("clubs.txt", "a Saudi football club", 20),
     "cities":    ("cities.txt", "a Saudi city", 15),
 }
 
@@ -61,19 +60,20 @@ for key, (filename, label, points) in WORDLISTS.items():
     wordlists[key] = load_wordlist(filename)
     print("Hisn loaded", len(wordlists[key]), key)
 
-# club nicknames -> club, and the years each club won a title
-def load_club_data():
+# clubs.json: every club with its names/nicknames and the years it won a title
+def load_clubs():
+    with open(DATA / "clubs.json", encoding="utf-8") as f:
+        clubs = json.load(f)
     aliases = {}
-    with open(DATA / "club_aliases.csv", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            aliases[row["alias"]] = row["club"]
-    titles = {}
-    with open(DATA / "club_titles.csv", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            titles.setdefault(row["club"], {})[row["year"]] = row["competition"]
-    return aliases, titles
+    for club, info in clubs.items():
+        for name in info["names"]:
+            aliases[normalize(name).strip()] = club
+    return clubs, aliases
 
-club_aliases, club_titles = load_club_data()
+clubs, club_aliases = load_clubs()
+wordlists["clubs"] = set(club_aliases)
+WORDLISTS["clubs"] = ("clubs.json", "a Saudi football club", 20)
+print("Hisn loaded", len(clubs), "clubs")
 
 # Arabic keyboard (Windows 101) -> the English key in the same place
 # so "السلام" typed with the keyboard on English becomes "hgsghl"
@@ -262,7 +262,7 @@ if found_phone:
 club_word = found_words.get("clubs")
 if club_word and found_year:
     club = club_aliases.get(club_word)
-    won = club_titles.get(club, {}).get(found_year)
+    won = clubs.get(club, {}).get("titles", {}).get(found_year)
     if won:
         score -= 10
         print("DANGER: " + club + " won the " + won + " in " + found_year + " - fans often use this year!")
