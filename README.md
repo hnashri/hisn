@@ -88,7 +88,18 @@ What Hisn still misses: phone numbers with spaces or dashes, Arabizi without vow
 
 The fixes: the short year note is only shown next to a personal word or on a weak password, names that are also English words (like `frost`) are only mentioned on weak passwords, and phone numbers can have spaces or dashes. Missed patterns went up because some phrases were only "found" through a short year before. These v1 numbers come from cases I studied while fixing, so they are **not** a fair test. The fair test will be a new set of cases from a different source, run once.
 
-Run it yourself: `python tests/run_benchmark.py` and `python tests/compare_zxcvbn.py` (needs `pip install zxcvbn`). This version is tagged `v0-baseline`. Results after my fixes will be reported separately, on new cases I have not seen.
+**v1 on new cases (the fair test):** a second, different AI assistant wrote 50 new cases after v1 was frozen. I ran them **once** and did not change anything after:
+
+| | Hisn v1 | zxcvbn |
+|---|---|---|
+| Same strength level as expected | **40 of 50** | 27 of 50 |
+| Saudi pattern passwords rated **strong** | **3 of 34** | 14 of 34 |
+| Found a pattern when there was one | 30 of 34 | |
+| False alarms on the 16 strong cases | 6 | |
+
+Looking at the 6 false alarms: 3 are passwords that really do have a name or city and a year (`Mohammed_2026_Secure#X`), Hisn mentions them but still rates the password strong. The other 3 are noisy notes (`789`, `42`) at the end of long passphrases. Real misses: `Inshallahok` (missing from my phrase list) and `Saudi05411`. A long sequence like `1234567890Aa!` is rated strong because Hisn only counts 4 digits of the sequence. These are the next things to fix, and they will be tested on another new set.
+
+Run it yourself: `python tests/run_benchmark.py` (or `python tests/run_benchmark.py tests/heldout_50.csv`) and `python tests/compare_zxcvbn.py` (needs `pip install zxcvbn`). The versions are tagged `v0-baseline` and `v1`.
 
 ## Privacy
 

@@ -1,5 +1,6 @@
 # runs Hisn on the 100 independent test cases and prints the results
 # run it with: python tests/run_benchmark.py
+# or on another file: python tests/run_benchmark.py tests/heldout_50.csv
 import csv
 import sys
 from pathlib import Path
@@ -12,8 +13,14 @@ hisn.check_pwned = lambda password: 0   # no internet needed
 # these are tips not patterns so they don't count as "detected"
 NOT_PATTERNS = ("Missing character types", "Too short", "Breach check")
 
+# the file can be given after the command (default is the 101 cases)
+if len(sys.argv) > 1:
+    filename = Path(sys.argv[1])
+else:
+    filename = Path(__file__).parent / "benchmark_100.csv"
+
 rows = []
-with open(Path(__file__).parent / "benchmark_100.csv", encoding="utf-8") as f:
+with open(filename, encoding="utf-8-sig") as f:
     for row in csv.DictReader(f):
         rows.append(row)
 
