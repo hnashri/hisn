@@ -321,9 +321,23 @@ def analyze(password):
         add("red", "A personal word + a year together = very easy to guess",
             "الجمع بين كلمة شخصية وسنة يجعل كلمة المرور سهلة التخمين جدًا.")
 
+    # ===== Blue info: standards that relate to this password =====
+    if length < 15:
+        add("blue", "NIST: minimum 8, recommended 15 characters",
+            "المعيار العالمي (NIST) يشترط 8 أحرف على الأقل ويوصي بـ15 حرفًا، "
+            "وطول كلمة المرور الحالية " + str(length) + " أحرف.")
+    if has_arabic:
+        add("blue", "SAMA: bank accounts lock after 3 wrong attempts",
+            "وفق إطار الأمن السيبراني للبنك المركزي السعودي (ساما)، يُقفل الحساب البنكي "
+            "بعد 3 محاولات خاطئة، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة إلى قفل الحساب.")
+
     # ===== Final score =====
     score = max(score, 0)
     color, level_ar = level_for(score)
+    if score >= 70:
+        findings.append({"severity": "blue", "en": "NCA: entities must set strong password policies",
+            "ar": "تُلزم الهيئة الوطنية للأمن السيبراني الجهات بوضع سياسات قوية لكلمات المرور، "
+                  "وكلمة المرور هذه تتماشى مع هذا التوجه."})
     return {"score": score, "color": color, "level": level_ar,
             "length": length, "findings": findings}
 

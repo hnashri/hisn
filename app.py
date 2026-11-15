@@ -58,13 +58,28 @@ else:
         st.markdown(f"**المستوى:** :{color}[{result['level']}]")
         st.progress(result["score"] / 100)
 
-        if not result["findings"]:
+        if not [f for f in result["findings"] if f["severity"] != "blue"]:
             st.success("لم تُكتشف أي مشكلة واضحة.")
-        for f in result["findings"]:
+        problems = [f for f in result["findings"] if f["severity"] != "blue"]
+        infos = [f for f in result["findings"] if f["severity"] == "blue"]
+
+        for f in problems:
             if f["severity"] == "red":
                 st.error(f["ar"])
             else:
                 st.warning(f["ar"])
+
+        if infos:
+            st.subheader("معلومات تهمك")
+            for f in infos:
+                st.info(f["ar"])
+
+        with st.expander("اعرف أكثر عن معايير كلمات المرور"):
+            st.markdown("""
+- **المعيار العالمي (NIST SP 800-63B):** الحد الأدنى 8 أحرف، ويوصي بـ15، ويقبل المسافات وجميع الرموز، ولا يشترط تغيير كلمة المرور دوريًا إلا عند تسريبها.
+- **الهيئة الوطنية للأمن السيبراني (الضابط 2-2-3-1):** تُلزم كل جهة بسياسة تشمل الطول والتعقيد ومدة الصلاحية والقفل، دون تحديد أرقام موحدة.
+- **البنك المركزي السعودي (الضابط 3.1.5):** يشترط سياسة قوية لكلمات المرور، ويُقفل الحساب بعد 3 محاولات خاطئة.
+""")
 
 if st.session_state.page == "welcome":
     st.caption("لا يحفظ حصن كلمة المرور ولا يسجّلها.")
