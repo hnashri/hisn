@@ -26,20 +26,40 @@ def load_names():
 names = load_names()
 print("Hisn loaded", len(names), "names")
 
-def load_saudi_words():
-    words = set()
-    with open(DATA / "saudi_words.txt", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip().lower()
-            if line and not line.startswith("#"):
-                words.add(line)
-    return words
-
-saudi_words = load_saudi_words()
-print("Hisn loaded", len(saudi_words), "Saudi words (clubs, cities)")
-
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
 leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i"}
+
+def normalize(text):
+    # long digit runs (like 2024 or 0551234567) are numbers, not Arabizi letters
+    text = re.sub(r"\d{2,}", " ", text.lower())
+    for symbol, letter in leet.items():
+        text = text.replace(symbol, letter)
+    for number, letter in arabizi.items():
+        text = text.replace(number, letter)
+    return text
+
+def load_wordlist(filename):
+    words = set()
+    with open(DATA / filename, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                words.add(normalize(line).strip())
+    return words
+
+# each list: (file, label shown to the user, points removed)
+WORDLISTS = {
+    "nicknames": ("nicknames.txt", "a nickname", 30),
+    "tribes":    ("tribes.txt", "a tribe or family name", 30),
+    "religious": ("religious.txt", "a common religious phrase", 20),
+    "clubs":     ("clubs.txt", "a Saudi football club", 20),
+    "cities":    ("cities.txt", "a Saudi city", 15),
+}
+
+wordlists = {}
+for key, (filename, label, points) in WORDLISTS.items():
+    wordlists[key] = load_wordlist(filename)
+    print("Hisn loaded", len(wordlists[key]), key)
 
 # ===== Read password =====
 password = input("Enter your password: ")
@@ -74,13 +94,8 @@ if has_digit:
 if has_symbol:
     score += 15
 
-# ===== Normalize (decode Arabizi) =====
-# long digit runs (like 2024 or 0551234567) are numbers, not Arabizi letters
-normalized = re.sub(r"\d{2,}", " ", password.lower())
-for symbol, letter in leet.items():
-    normalized = normalized.replace(symbol, letter)
-for number, letter in arabizi.items():
-    normalized = normalized.replace(number, letter)
+# ===== Normalize (decode Arabizi and leetspeak) =====
+normalized = normalize(password)
 
 # ===== Search for names (keep the longest match) =====
 found_name = None
@@ -116,12 +131,25 @@ for i in range(len(password) - 3):
     if password[i] * 4 == password[i:i+4]:
         found_repeat = password[i:i+4]
 
-# ===== Search for Saudi clubs and cities =====
-found_saudi = None
-for w in saudi_words:
-    if w in normalized:
-        if found_saudi is None or len(w) > len(found_saudi):
-            found_saudi = w
+# ===== Search in the Saudi wordlists =====
+found_words = {}
+for key, words in wordlists.items():
+    best = None
+    for w in words:
+        if len(w) >= 3 and w in normalized:
+            if best is None or len(w) > len(best):
+                best = w
+    if best:
+        found_words[key] = best
+
+# if a generic name overlaps a more specific word (tribe, nickname, city...),
+# keep the specific one because its warning is more useful
+def overlaps(a, b):
+    i, j = normalized.find(a), normalized.find(b)
+    return i < j + len(b) and j < i + len(a)
+
+if found_name and any(overlaps(found_name, w) for w in found_words.values()):
+    found_name = None
 
 # ===== Search for Saudi phone numbers =====
 found_phone = re.search(r"(9665|05|5)\d{8}", password)
@@ -133,20 +161,26 @@ if found_name:
 if found_year:
     score -= 20
     print("Warning: contains a year ->", found_year)
-if found_name and found_year:
-    print("DANGER: name + year together = very easy to guess!")
 if found_sequence:
     score -= 20
     print("Warning: contains an easy sequence ->", found_sequence)
 if found_repeat:
     score -= 20
     print("Warning: contains repeated characters ->", found_repeat)
-if found_saudi and found_saudi != found_name:
-    score -= 20
-    print("Warning: contains a Saudi club or city ->", found_saudi)
+already_counted = {found_name}
+for key, word in found_words.items():
+    if word in already_counted:
+        continue
+    filename, label, points = WORDLISTS[key]
+    score -= points
+    print("Warning: contains " + label + " ->", word)
+    already_counted.add(word)
 if found_phone:
     score -= 30
     print("Warning: contains a Saudi phone number ->", found_phone.group())
+
+if (found_name or found_words) and found_year:
+    print("DANGER: a personal word + a year together = very easy to guess!")
 
 # ===== Final score =====
 if score < 0:
