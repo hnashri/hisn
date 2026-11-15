@@ -17,7 +17,8 @@ Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 |---|---|---|
 | Arabic names (35k+) | `Sara@2005` | name + year |
 | Arabizi (7 = ح, 3 = ع ...) | `A7med`, `3bdullah` | Ahmed, Abdullah |
-| Hijri and Gregorian years | `1426`, `2008` | a Hijri year, a Gregorian year |
+| Hijri and Gregorian years | `1426`, `2008`, `Sara05` | a Hijri year, a Gregorian year, a short year |
+| Full birth dates | `01051426` | day + month + year |
 | Nicknames | `3bood`, `Fahood`, `Lulu` | Saudi nicknames |
 | Family names (many spellings) | `AlOtaibi`, `Gahtani` | family names |
 | Saudi football clubs and nicknames | `AlZaeem2019` | Al-Hilal + a year it won a title |
@@ -32,14 +33,28 @@ Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 For every finding Hisn explains **why** it is risky, in Arabic.
 
 It also shows:
-- a score from 0 to 100 (green, yellow, red)
 - an estimated time to crack, assuming the attacker tries name and year lists first
+- a score from 0 to 100 that comes from the time to crack, so the two always agree
 - notes from password standards (NIST, the National Cybersecurity Authority, SAMA)
+
+## How the score works
+
+1. Every part Hisn finds (a name, a year, a club...) counts as **one pick from a list**, using the real size of that list. A name is one guess out of 35k names, not 5 random letters.
+2. The rest of the password is guessed character by character (English letters, Arabic letters, digits and symbols).
+3. The attacker is assumed to try **10 billion guesses per second** (a fast offline attack).
+4. The score follows the time: less than 1 second is 0, about 30 thousand years is 100. Below 40 is weak, 70 and above is strong.
+
+This is why a long passphrase like `purple-kettle-drift-mango` is strong even without capitals or digits, which matches NIST.
+
+## Why Hisn exists
+
+A 2018 study, [*Your Culture is in Your Password*](https://elmi.hbku.edu.qa/en/publications/your-culture-is-in-your-password-an-analysis-of-a-demographically/), analyzed a leak from a Middle Eastern bank and found that a popular password meter rated these passwords **stronger than they really were**, and that adding local context made it more accurate. Hisn is my attempt at that local context for Saudi users.
 
 ## Privacy
 
 - Hisn does not save or log the password.
-- The breach check uses **k-anonymity**: the password is hashed with SHA-1 and only the first 5 characters of the hash are sent to [Have I Been Pwned](https://haveibeenpwned.com/Passwords). The full password and the full hash never leave the computer.
+- The breach check uses **k-anonymity**: the password is hashed with SHA-1 and only the first 5 characters of the hash are sent to [Have I Been Pwned](https://haveibeenpwned.com/Passwords). The full password and the full hash are never sent to that site.
+- In the online demo the check runs on the Streamlit server, so the password does leave your device (it is not saved). That is why the demo asks you to try a similar password, not your real one. Running Hisn on your own computer keeps everything local.
 - No leaked password lists were used to build Hisn.
 
 ## Standards
@@ -90,13 +105,15 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 
 ## Known limitations
 
-- The score weights come from reasoning, not from a statistical study.
+- The time to crack (and the score) is a rough estimate based on a simple attack model, not a statistical study.
 - Some normal words are also names, like `sabah` (morning) or `jabal` (mountain).
 - Very short names (3 letters like `ali`) are skipped to avoid false alarms.
-- The time to crack is a rough estimate.
+- A name has to be a whole word, so two names glued in lowercase (`ahmedali`) may be missed. `AhmedAli` works.
+- Hisn has not been compared with other meters yet (planned, see below).
 
 ## Future ideas
 
+- Compare Hisn with [zxcvbn](https://github.com/dropbox/zxcvbn) on a set of Saudi style passwords I write myself.
 - Support more Arab countries (clubs, cities and Arabizi styles from Egypt, the Gulf, the Maghreb).
 - Grow the nickname and family name lists.
 - Check passwords against an organization's own policy.
@@ -105,3 +122,5 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 
 Made by **Hind Nashri**, IT student (Cybersecurity track), Saudi Arabia.
 [LinkedIn](https://www.linkedin.com/in/hind-nashri-22a2a82b5/)
+
+License: [MIT](LICENSE)

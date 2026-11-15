@@ -4,6 +4,7 @@
 import csv
 import json
 import hashlib
+import math
 import re
 import urllib.request
 from pathlib import Path
@@ -21,6 +22,9 @@ def load_names():
             name = row["english_name"].strip().lower()
             if len(name) >= 3:
                 names.add(name)
+                # Saudis write oo as ou too (noora noura mansoor mansour)
+                if "oo" in name:
+                    names.add(name.replace("oo", "ou"))
 
     with open(DATA / "arabic_name_pairs.json", encoding="utf-8") as f:
         for name in json.load(f):
@@ -47,9 +51,11 @@ leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i", "4": "a"}
 def normalize_with_mask(text):
     # returns the decoded text + a list that says which letters were decoded
     # (I need it later so a "name" made only of symbols doesn't count)
+    # + a list that says where each letter was in the original password
     text = text.lower()
     out = []
     changed = []
+    origin = []
     i = 0
 
     while i < len(text):
@@ -61,6 +67,7 @@ def normalize_with_mask(text):
             if j - i >= 2:
                 out.append(" ")
                 changed.append(False)
+                origin.append(i)
                 i = j
                 continue
 
@@ -76,16 +83,18 @@ def normalize_with_mask(text):
             for letter in new:
                 out.append(letter)
                 changed.append(True)
+                origin.append(i)
         else:
             out.append(ch)
             changed.append(False)
+            origin.append(i)
         i += 1
 
-    return "".join(out), changed
+    return "".join(out), changed, origin
 
 
 def normalize(text):
-    decoded, changed = normalize_with_mask(text)
+    decoded, changed, origin = normalize_with_mask(text)
     return decoded
 
 
@@ -134,13 +143,13 @@ def load_wordlist(filename):
     return words
 
 
-# list name: (file English label points to remove)
+# list name: (file English label)
 WORDLISTS = {
-    "nicknames": ("nicknames.txt", "a nickname", 30),
-    "families": ("families.txt", "a family name", 30),
-    "religious": ("religious.txt", "a common religious phrase", 20),
-    "cities": ("cities.txt", "a Saudi city", 15),
-    "common": ("common_words.txt", "a very common password word", 30),
+    "nicknames": ("nicknames.txt", "a nickname"),
+    "families": ("families.txt", "a family name"),
+    "religious": ("religious.txt", "a common religious phrase"),
+    "cities": ("cities.txt", "a Saudi city"),
+    "common": ("common_words.txt", "a very common password word"),
 }
 
 wordlists = {}
@@ -167,7 +176,7 @@ def load_clubs():
 
 clubs, club_aliases = load_clubs()
 wordlists["clubs"] = set(club_aliases)
-WORDLISTS["clubs"] = ("clubs.json", "a Saudi football club", 20)
+WORDLISTS["clubs"] = ("clubs.json", "a Saudi football club")
 print("Hisn loaded", len(clubs), "clubs")
 
 
@@ -316,6 +325,8 @@ def estimate_crack_seconds(password, known_parts, pwned):
         charset += 10
     if any_char(password, "symbol"):
         charset += 33
+    if any_char(password, "arabic"):
+        charset += 36
     if charset < 10:
         charset = 10
 
@@ -345,7 +356,58 @@ def any_char(password, kind):
             return True
         if kind == "symbol" and not c.isalnum():
             return True
+        if kind == "arabic" and "\u0600" <= c <= "\u06ff":
+            return True
     return False
+
+
+def whole_word(normalized, changed, origin, password, pos, size):
+    # a name only counts if it is a whole word not a piece of a longer word
+    # mango has "mang" inside but it is not a name
+    # a capital letter starts a new word like AhmedAli
+    # and a symbol next to it is fine like Sara@ (the @ is not part of the name)
+    end = pos + size
+    if pos > 0 and normalized[pos - 1].isalpha() and not changed[pos - 1]:
+        if not password[origin[pos]].isupper():
+            return False
+    if end < len(normalized) and normalized[end].isalpha() and not changed[end]:
+        if not password[origin[end]].isupper():
+            return False
+    return True
+
+
+def valid_year(year):
+    return 1950 <= year <= 2030 or 1370 <= year <= 1460
+
+
+def find_date(password):
+    # a full birth date like 01051426 (day month year) or 14260501
+    # or a short one like 010526 (day month and the last 2 digits)
+    for run in re.findall(r"\d{6,8}", password):
+        if len(run) == 8:
+            day, month, year = int(run[:2]), int(run[2:4]), int(run[4:])
+            if 1 <= day <= 31 and 1 <= month <= 12 and valid_year(year):
+                return run, run[4:]
+            year, month, day = int(run[:4]), int(run[4:6]), int(run[6:])
+            if 1 <= day <= 31 and 1 <= month <= 12 and valid_year(year):
+                return run, run[:4]
+        if len(run) == 6:
+            day, month = int(run[:2]), int(run[2:4])
+            if 1 <= day <= 31 and 1 <= month <= 12:
+                return run, run[4:]
+    return None
+
+
+def score_from_seconds(seconds):
+    # the score comes from the time to crack so they always agree
+    # less than 1 second = 0 and about 30 thousand years (10^12 seconds) = 100
+    # log10 counts the zeros so 1000 seconds = 3 and 10^12 seconds = 12
+    if seconds < 1:
+        return 0
+    score = round(math.log10(seconds) / 12 * 100)
+    if score > 100:
+        score = 100
+    return score
 
 
 def overlaps(text, a, b):
@@ -380,65 +442,88 @@ def analyze(password):
     has_lower = any_char(password, "lower")
     has_digit = any_char(password, "digit")
     has_symbol = any_char(password, "symbol")
+    has_arabic = any_char(password, "arabic")
 
-    # start with length and character types
-    score = 0
-    if length >= 12:
-        score += 40
-    elif length >= 8:
-        score += 20
-    else:
+    if length < 8:
         add("red", "Too short (less than 8 characters)",
             "كلمة المرور قصيرة؛ يُنصح بألا تقل عن 12 حرفًا.")
 
+    # NIST cares about length more than mixing types
+    # so I only show this tip when the password is not long
+    # (Arabic letters have no capital letters so I skip them)
     missing = []
-    if has_upper:
-        score += 15
-    else:
+    if not has_upper:
         missing.append("حروف كبيرة")
-    if has_lower:
-        score += 15
-    else:
+    if not has_lower:
         missing.append("حروف صغيرة")
-    if has_digit:
-        score += 15
-    else:
+    if not has_digit:
         missing.append("أرقام")
-    if has_symbol:
-        score += 15
-    else:
+    if not has_symbol:
         missing.append("رموز")
-
-    if missing:
+    if missing and length < 15 and not has_arabic:
         add("yellow", "Missing character types",
-            "لا تحتوي كلمة المرور على: " + "، ".join(missing) + ".")
+            "لا تحتوي كلمة المرور على: " + "، ".join(missing) +
+            ". إضافتها تفيد، لكن زيادة الطول تفيد أكثر.")
 
     # decode A7med -> ahmed before searching
-    normalized, changed = normalize_with_mask(password)
+    normalized, changed, origin = normalize_with_mask(password)
 
     # names (the longest one wins)
     # a name only counts if at most 1 letter came from a symbol
     # otherwise random passwords like x9#Lm@Rt give fake names
+    # and it has to be a whole word (mang inside mango is not a name)
+    # (if 2 names fit I take the one with less decoded letters then the longer one
+    # so Mansour@ gives mansour not mansoura)
     found_name = None
+    found_decoded = 0
     for n in names:
         if len(n) < 4:
             continue
         pos = normalized.find(n)
         if pos == -1:
             continue
-        decoded_letters = sum(changed[pos:pos + len(n)])
-        if decoded_letters <= 1:
-            if found_name is None or len(n) > len(found_name):
-                found_name = n
+        if not whole_word(normalized, changed, origin, password, pos, len(n)):
+            continue
+        # count decoded characters of the password not letters
+        # (5 becomes kh but it is still 1 character)
+        decoded = set()
+        for k in range(pos, pos + len(n)):
+            if changed[k]:
+                decoded.add(origin[k])
+        decoded_letters = len(decoded)
+        if decoded_letters > 1:
+            continue
+        if found_name is None or decoded_letters < found_decoded:
+            found_name = n
+            found_decoded = decoded_letters
+        elif decoded_letters == found_decoded and len(n) > len(found_name):
+            found_name = n
+
+    # a full birth date like 01051426
+    found_date = find_date(password)
 
     # years (gregorian 1950-2030 hijri 1370-1460)
     found_year = None
-    for i in range(len(password) - 3):
-        part = password[i:i + 4]
-        if part.isdigit():
-            year = int(part)
-            if 1950 <= year <= 2030 or 1370 <= year <= 1460:
+    if found_date:
+        found_year = found_date[1]
+    else:
+        for i in range(len(password) - 3):
+            part = password[i:i + 4]
+            if part.isdigit() and valid_year(int(part)):
                 found_year = part
+
+    # Saudi mobile number: 05xxxxxxxx 9665xxxxxxxx or 5xxxxxxxx
+    found_phone = re.search(r"(9665|05|5)\d{8}", password)
+    if found_phone and found_date and found_date[0] in found_phone.group():
+        found_date = None
+        found_year = None
+
+    # 2 digits alone like Sara05 or 3bood@99 are often a year too
+    short_year = None
+    if not found_year:
+        two = re.search(r"(?<!\d)\d\d(?!\d)", password)
+        if two:
+            short_year = two.group()
 
     # sequences like 1234 abcd qwerty
     sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
@@ -450,6 +535,12 @@ def analyze(password):
             backwards = chunk[::-1]
             if chunk in low or backwards in low:
                 found_sequence = chunk
+    # a sequence inside a date or a phone number is already counted there
+    if found_sequence:
+        if found_date and found_sequence in found_date[0]:
+            found_sequence = None
+        elif found_phone and found_sequence in found_phone.group():
+            found_sequence = None
 
     # short ones like 123 or 987 (not inside a year like 2012)
     short_sequence = None
@@ -457,6 +548,10 @@ def analyze(password):
         text = low
         if found_year:
             text = text.replace(found_year, " ")
+        if found_date:
+            text = text.replace(found_date[0], " ")
+        if found_phone:
+            text = text.replace(found_phone.group(), " ")
         for i in range(8):
             chunk = "0123456789"[i:i + 3]
             if chunk in text:
@@ -513,19 +608,9 @@ def analyze(password):
                 found_keyboard = None
                 break
 
-    # Arabic letters = the keyboard was left on Arabic
-    has_arabic = False
-    for c in password:
-        if "؀" <= c <= "ۿ":
-            has_arabic = True
-
-    # Saudi mobile number: 05xxxxxxxx 9665xxxxxxxx or 5xxxxxxxx
-    found_phone = re.search(r"(9665|05|5)\d{8}", password)
-
     # warnings
 
     if found_name:
-        score -= 30
         pos = normalized.find(found_name)
         note = ""
         if any(changed[pos:pos + len(found_name)]):
@@ -534,8 +619,11 @@ def analyze(password):
             "تحتوي كلمة المرور على اسم شائع (" + found_name + ")." + note +
             " الأسماء من أول ما يجربه المخترق، خصوصًا اسم صاحب الحساب أو أفراد عائلته.")
 
-    if found_year:
-        score -= 20
+    if found_date:
+        add("red", "Contains a full date -> " + found_date[0],
+            "تحتوي كلمة المرور على تاريخ كامل (" + found_date[0] + "). "
+            "تاريخ الميلاد من أول ما يجربه المخترق، لأنه يظهر غالبًا في الحسابات.")
+    elif found_year:
         if 1370 <= int(found_year) <= 1460:
             kind = "هجرية"
         else:
@@ -544,19 +632,21 @@ def analyze(password):
             "تحتوي كلمة المرور على سنة " + kind + " (" + found_year + "). "
             "سنوات الميلاد والتخرج تظهر غالبًا في الحسابات، وهي من أول ما يُجرَّب عند التخمين.")
 
+    if short_year:
+        add("yellow", "Might be a short year -> " + short_year,
+            "الرقمان (" + short_year + ") قد يكونان سنة مختصرة مثل 20" + short_year +
+            " أو 19" + short_year + "، والمخترق يجرب هذا النمط كثيرًا.")
+
     if found_sequence:
-        score -= 20
         add("red", "Contains an easy sequence -> " + found_sequence,
             "تحتوي كلمة المرور على تسلسل سهل (" + found_sequence + ").")
 
     if short_sequence:
-        score -= 10
         add("yellow", "Contains a short number sequence -> " + short_sequence,
             "تحتوي كلمة المرور على تسلسل أرقام قصير (" + short_sequence +
             ")، وهو من أشهر الإضافات التي يجربها المخترق.")
 
     if found_repeat:
-        score -= 20
         add("red", "Contains repeated characters -> " + found_repeat,
             "تحتوي كلمة المرور على حروف مكررة (" + found_repeat + ").")
 
@@ -565,13 +655,10 @@ def analyze(password):
         if word == found_name:
             continue
         label = WORDLISTS[key][1]
-        points = WORDLISTS[key][2]
-        score -= points
         add("red", "Contains " + label + " -> " + word,
             "تحتوي كلمة المرور على " + ARABIC_LABELS[key] + " (" + word + "). " + WHY[key])
 
     if found_keyboard:
-        score -= 30
         add("red", "Arabic word typed on the English keyboard -> " + found_keyboard[0],
             "تحتوي كلمة المرور على كلمة عربية (" + found_keyboard[1] +
             ") مكتوبة بلوحة المفاتيح الإنجليزية، وهذا الأسلوب معروف لدى المخترقين.")
@@ -590,39 +677,24 @@ def analyze(password):
             "لو كانت اللوحة إنجليزية لكُتبت: " + intended)
 
     if found_phone:
-        score -= 30
         number = found_phone.group()
         add("red", "Contains a Saudi phone number -> " + number,
             "تحتوي كلمة المرور على رقم جوال سعودي (" + number + ")، وهو متاح للآخرين غالبًا.")
 
     # fans love the year their club won something
+    title_year = False
     if "clubs" in found_words and found_year:
         club = club_aliases.get(found_words["clubs"])
         titles = clubs.get(club, {}).get("titles", {})
         if found_year in titles:
-            score -= 10
+            title_year = True
             add("red", club + " won the " + titles[found_year] + " in " + found_year,
                 "السنة " + found_year + " هي سنة فوز النادي ببطولة، ويستخدمها المشجعون كثيرًا.")
-
-    # a personal word + a year is the first thing a hacker tries
-    if found_year:
-        word = None
-        if found_name:
-            word = found_name
-        elif found_keyboard:
-            word = found_keyboard[1]
-        elif found_words:
-            word = list(found_words.values())[0]
-        if word:
-            add("red", "A personal word + a year together = very easy to guess",
-                "الجمع بين (" + word + ") والسنة (" + found_year + ") يجعل كلمة المرور سهلة التخمين جدًا؛ "
-                "هذا أول نمط يجربه المخترق.")
 
     # data breaches
 
     pwned = check_pwned(password)
     if pwned:
-        score -= 50
         add("red", "Found in data breaches " + str(pwned) + " times",
             "ظهرت كلمة المرور هذه في تسريبات بيانات حقيقية " + f"{pwned:,}" +
             " مرة. يجب عدم استخدامها أبدًا، لأن المخترقين يجربون الكلمات المسربة أولًا.")
@@ -632,21 +704,53 @@ def analyze(password):
 
     # time to crack
 
-    # (part we found how big the list a hacker would use is)
+    # each part we found is one pick from a list so the hacker
+    # tries the whole list instead of guessing letter by letter
+    # (I use the real size of my lists)
     known_parts = []
     if found_name:
-        known_parts.append((found_name, 40000))
-    for word in found_words.values():
-        known_parts.append((word, 1000))
-    if found_year:
-        known_parts.append((found_year, 200))
+        known_parts.append((found_name, len(names)))
+    for key in found_words:
+        word = found_words[key]
+        if word != found_name:
+            known_parts.append((word, len(wordlists[key])))
+    if found_date:
+        # about 366 days in each of about 160 years (hijri and gregorian)
+        known_parts.append((found_date[0], 366 * 160))
+    elif found_year:
+        if title_year:
+            known_parts.append((found_year, 30))
+        else:
+            known_parts.append((found_year, 160))
     if found_phone:
         known_parts.append((found_phone.group(), 1000000))
     if found_sequence:
         known_parts.append((found_sequence, 100))
+    if found_repeat:
+        known_parts.append((found_repeat, 100))
     if found_keyboard:
-        known_parts.append((found_keyboard[0], 10000))
+        known_parts.append((found_keyboard[0], len(keyboard_names)))
     crack_seconds = estimate_crack_seconds(password, known_parts, pwned)
+
+    # the score and the level both come from the time to crack
+    score = score_from_seconds(crack_seconds)
+
+    # a personal word + a year is the first thing a hacker tries
+    # (only when the password is weak because a long one hides it well)
+    year_text = found_year or short_year
+    if year_text and score < 40:
+        word = None
+        if found_name:
+            word = found_name
+        elif found_keyboard:
+            word = found_keyboard[1]
+        elif found_words:
+            word = list(found_words.values())[0]
+        if word:
+            add("red", "A personal word + a year together = very easy to guess",
+                "الجمع بين (" + word + ") والسنة (" + year_text + ") يجعل كلمة المرور سهلة التخمين جدًا؛ "
+                "هذا أول نمط يجربه المخترق.")
+
 
     # blue notes (standards)
 
@@ -659,9 +763,6 @@ def analyze(password):
         add("blue", "SAMA: bank accounts lock after 3 wrong attempts",
             "وفق إطار الأمن السيبراني للبنك المركزي السعودي (ساما)، يُقفل الحساب البنكي "
             "بعد 3 محاولات خاطئة، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة إلى قفل الحساب.")
-
-    if score < 0:
-        score = 0
 
     if score >= 70:
         add("blue", "NCA: entities must set strong password policies",

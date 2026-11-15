@@ -71,7 +71,14 @@ else:
         col1.metric("الدرجة", f"{result['score']} / 100")
         col2.metric("الوقت المتوقع للكسر", result["crack_time"])
         st.markdown(f"**المستوى:** :{color}[{result['level']}]")
-        st.progress(result["score"] / 100)
+        # st.progress is always one color so I draw my own bar
+        # red for weak orange for medium green for strong
+        bar_colors = {"red": "#b3261e", "yellow": "#c77700", "green": "#2e5e3e"}
+        bar = bar_colors[result["color"]]
+        st.markdown(
+            f'<div style="background:#ece0c8;border-radius:6px;height:10px">'
+            f'<div style="background:{bar};width:{result["score"]}%;height:10px;border-radius:6px"></div></div>',
+            unsafe_allow_html=True)
 
         # problems (red/yellow) first blue notes after them
         problems = []
@@ -100,7 +107,7 @@ else:
             st.markdown("""
 - **المعيار العالمي (NIST SP 800-63B):** الحد الأدنى 8 أحرف، ويوصي بـ15، ويقبل المسافات وجميع الرموز، ولا يشترط تغيير كلمة المرور دوريًا إلا عند تسريبها.
 - **الهيئة الوطنية للأمن السيبراني (الضابط 2-2-3-1):** تُلزم كل جهة بسياسة تشمل الطول والتعقيد ومدة الصلاحية والقفل، دون تحديد أرقام موحدة.
-- **الوقت المتوقع للكسر:** تقدير تقريبي لهجوم سريع على جهاز قوي (10 مليارات محاولة في الثانية)، مع افتراض أن المخترق يجرب قوائم الأسماء والسنوات أولًا.
+- **الوقت المتوقع للكسر:** تقدير تقريبي لهجوم سريع على جهاز قوي (10 مليارات محاولة في الثانية)، مع افتراض أن المخترق يجرب قوائم الأسماء والسنوات أولًا. والدرجة تُحسب من هذا الوقت نفسه، فكلما طال الوقت ارتفعت الدرجة.
 - **البنك المركزي السعودي (الضابط 3.1.5):** يشترط سياسة قوية لكلمات المرور، ويُقفل الحساب بعد 3 محاولات خاطئة.
 """)
 

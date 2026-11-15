@@ -75,6 +75,41 @@ class TestHisn(unittest.TestCase):
         names = [f["en"] for f in result["findings"] if "common name" in f["en"]]
         self.assertEqual(names, [])
 
+    # these came from people who tested Hisn for me
+
+    def test_score_agrees_with_crack_time(self):
+        # cracked in seconds = weak even if it has symbols
+        self.assertEqual(hisn.analyze("Jeddah#123")["level"], "ضعيفة")
+        # a long passphrase without capitals is still strong
+        self.assertEqual(hisn.analyze("purple-kettle-drift-mango")["level"], "قوية")
+
+    def test_name_must_be_a_whole_word(self):
+        # mang is inside mango but it is not a name
+        result = hisn.analyze("purple-kettle-drift-mango")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertNotIn("common name", text)
+
+    def test_arabic_letters_count(self):
+        # a long Arabic password is not weak just because it has no English letters
+        result = hisn.analyze("قهوةالصباحالبارد")
+        self.assertNotEqual(result["level"], "ضعيفة")
+
+    def test_short_year(self):
+        result = hisn.analyze("Sara05")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertIn("short year -> 05", text)
+
+    def test_full_date(self):
+        result = hisn.analyze("Noura01051426")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertIn("full date -> 01051426", text)
+        self.assertIn("common name -> noura", text)
+
+    def test_no_sequence_inside_phone(self):
+        result = hisn.analyze("Sara0551234567")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertNotIn("sequence", text)
+
 
 if __name__ == "__main__":
     unittest.main()
