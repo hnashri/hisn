@@ -13,15 +13,15 @@ Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 
 | | Example | What Hisn sees |
 |---|---|---|
-| Arabic names (35k+) | `Hind@2005` | name + year |
+| Arabic names (35k+) | `Sara@2005` | name + year |
 | Arabizi (7 = ح, 3 = ع ...) | `A7med`, `3bdullah` | Ahmed, Abdullah |
 | Hijri and Gregorian years | `1426`, `2008` | a Hijri year, a Gregorian year |
-| Nicknames | `Hnooda`, `3bood`, `Lulu` | Saudi nicknames |
-| Family names (many spellings) | `AlShereef`, `Gahtani` | family names |
+| Nicknames | `3bood`, `Fahood`, `Lulu` | Saudi nicknames |
+| Family names (many spellings) | `AlOtaibi`, `Gahtani` | family names |
 | Saudi football clubs and nicknames | `AlZaeem2019` | Al-Hilal + a year it won a title |
 | Saudi cities | `Jeddah#123` | a city + a short sequence |
 | Religious phrases | `Bismillah2020` | a common phrase + a year |
-| Arabic typed on the English keyboard | `hgsghl`, `ik]` | السلام, هند |
+| Arabic typed on the English keyboard | `hgsghl`, `lpl]` | السلام, محمد |
 | Arabic letters by mistake | `شفثقف` | the keyboard was on Arabic, you meant `atert` |
 | Saudi phone numbers | `0551234567` | a mobile number |
 | Sequences and repeats | `qwerty`, `1234`, `aaaa` | easy patterns |

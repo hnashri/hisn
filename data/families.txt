@@ -53,9 +53,7 @@ hashmi
 alhashmi
 tamimi
 altamimi
-nashri
-alnashri
-# --- Jazan region (my region) ---
+# Jazan region
 hakami
 alhakami
 hakmi

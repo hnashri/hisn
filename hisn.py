@@ -210,7 +210,7 @@ def add_keyed(keyed, arabic):
             has_symbol = True
 
     # short letter-only keys look like normal English so they need 5+
-    # with a symbol like ] or ; even 3 is enough (هند = ik])
+    # with a symbol like ] or ; even 3-4 keys are enough (محمد = lpl])
     if len(keys) >= 5 or (len(keys) >= 3 and has_symbol):
         keyed[keys] = DIACRITICS.sub("", arabic)
 
