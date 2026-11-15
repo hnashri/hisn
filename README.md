@@ -78,6 +78,16 @@ zxcvbn rates passwords like `A7mad_1446`, `AlHilal_2021`, `Bismillah_1441` and e
 
 What Hisn still misses: phone numbers with spaces or dashes, Arabizi without vowels (`3bd-7sn`), Arabizi phrases (`SbahAlkhair`), new nicknames (`Dadoosh`), and 3 letter names like `Ali` (skipped on purpose). It also gives a noisy "short year" note on some long passphrases.
 
+**v1 (after 3 fixes, tested on the same 101 cases I had already seen):**
+
+| | v0 | v1 (seen) |
+|---|---|---|
+| Same strength level as expected | 72 | 74 |
+| False alarms on traps | 9 | 2 |
+| Missed patterns | 6 | 8 |
+
+The fixes: the short year note is only shown next to a personal word or on a weak password, names that are also English words (like `frost`) are only mentioned on weak passwords, and phone numbers can have spaces or dashes. Missed patterns went up because some phrases were only "found" through a short year before. These v1 numbers come from cases I studied while fixing, so they are **not** a fair test. The fair test will be a new set of cases from a different source, run once.
+
 Run it yourself: `python tests/run_benchmark.py` and `python tests/compare_zxcvbn.py` (needs `pip install zxcvbn`). This version is tagged `v0-baseline`. Results after my fixes will be reported separately, on new cases I have not seen.
 
 ## Privacy
@@ -138,6 +148,7 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 - The time to crack (and the score) is a rough estimate based on a simple attack model, not a statistical study.
 - Some normal words are also names, like `sabah` (morning) or `jabal` (mountain).
 - Very short names (3 letters like `ali`) are skipped to avoid false alarms.
+- The names list is global, so it has names that are also English words. A list of common English words (from zxcvbn) keeps them quiet on strong passwords, but rare words like `aster` can still show up.
 - A name has to be a whole word, so two names glued in lowercase (`ahmedali`) may be missed. `AhmedAli` works.
 - Hisn has not been compared with other meters yet (planned, see below).
 

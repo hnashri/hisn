@@ -132,6 +132,25 @@ class TestHisn(unittest.TestCase):
         text = " | ".join(f["en"] for f in hisn.analyze("Sara@1426")["findings"])
         self.assertIn("NIST (2025): minimum 15 characters", text)
 
+    # after the 101 case benchmark (I use new examples here not the benchmark ones)
+
+    def test_no_short_year_note_on_strong_passphrase(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Granite-Harbor-Lemon-Sky47")["findings"])
+        self.assertNotIn("short year", text)
+
+    def test_english_word_name_quiet_when_strong(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Frost-Candle-Orbit-Mint!3")["findings"])
+        self.assertNotIn("common name", text)
+
+    def test_arabic_names_still_found(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Khalid@1433")["findings"])
+        self.assertIn("common name -> khalid", text)
+
+    def test_phone_with_spaces_or_dashes(self):
+        for p in ["056-987-6543", "056 987 6543"]:
+            text = " | ".join(f["en"] for f in hisn.analyze(p)["findings"])
+            self.assertIn("Saudi phone number", text)
+
 
 if __name__ == "__main__":
     unittest.main()

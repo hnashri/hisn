@@ -8,3 +8,7 @@
 | nicknames.txt, families.txt, clubs.json (names), cities.txt, religious.txt, common_words.txt | Written by hand for this project | project license |
 
 No leaked or breached password lists are used anywhere in Hisn.
+
+## english_words.txt
+
+The most common English words from the English Wikipedia frequency list in [zxcvbn-python](https://github.com/dwolfhub/zxcvbn-python) (MIT License). I kept words of 4+ letters from the top 20,000 and removed the ones that are Arabic names in muslim_names.csv (plus abdullah, khalid, allah).

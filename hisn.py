@@ -38,6 +38,12 @@ def load_names():
 names = load_names()
 print("Hisn loaded", len(names), "names")
 
+# my names list has names from everywhere so some are normal English words
+# (frost delta grace) so I need to know which ones are English words too
+# (top English words from the zxcvbn project MIT license)
+with open(DATA / "english_words.txt", encoding="utf-8") as f:
+    english_words = set(f.read().split())
+
 
 # turning A7med into ahmed
 
@@ -537,7 +543,9 @@ def analyze(password):
                 found_year = part
 
     # Saudi mobile number: 05xxxxxxxx 9665xxxxxxxx or 5xxxxxxxx
-    found_phone = re.search(r"(9665|05|5)\d{8}", password)
+    # (people also write it with spaces or dashes like 055 246 8135)
+    compact = re.sub(r"[\s-]", "", password)
+    found_phone = re.search(r"(9665|05|5)\d{8}", compact)
     if found_phone and found_date and found_date[0] in found_phone.group():
         found_date = None
         found_year = None
@@ -582,6 +590,13 @@ def analyze(password):
                 short_sequence = chunk
             elif chunk[::-1] in text:
                 short_sequence = chunk[::-1]
+
+    # the phone number already explains these digits
+    if found_phone:
+        if short_sequence and short_sequence in found_phone.group():
+            short_sequence = None
+        if short_year and short_year in found_phone.group():
+            short_year = None
 
     # aaaa or 1111
     found_repeat = None
@@ -641,7 +656,12 @@ def analyze(password):
 
     # warnings
 
-    if found_name:
+    # a name that is also an English word (like frost) and a short year (like 82)
+    # are only worth a warning when the password is weak
+    # I check that after the score so here I skip them
+    name_is_word = found_name is not None and found_name in english_words
+
+    if found_name and not name_is_word:
         note = ""
         if found_decoded > 0:
             note = " حتى مع استبدال بعض الحروف بأرقام أو رموز، فهذه الحيلة معروفة."
@@ -662,10 +682,6 @@ def analyze(password):
             "تحتوي كلمة المرور على سنة " + kind + " (" + found_year + "). "
             "سنوات الميلاد والتخرج تظهر غالبًا في الحسابات، وهي من أول ما يُجرَّب عند التخمين.")
 
-    if short_year:
-        add("yellow", "Might be a short year -> " + short_year,
-            "الرقمان (" + short_year + ") قد يكونان سنة مختصرة مثل 20" + short_year +
-            " أو 19" + short_year + "، والمخترق يجرب هذا النمط كثيرًا.")
 
     if found_sequence:
         add("red", "Contains an easy sequence -> " + found_sequence,
@@ -769,6 +785,19 @@ def analyze(password):
     # the score and the level both come from the time to crack
     # I use the fast attack because it is the worst case
     score = score_from_seconds(crack_seconds)
+
+    if name_is_word and score < 40:
+        add("yellow", "Contains a common name or English word -> " + found_name,
+            "تحتوي كلمة المرور على اسم أو كلمة إنجليزية شائعة (" + found_name +
+            ")، وهذه الكلمات موجودة في قوائم التخمين.")
+
+    # a short year next to a personal word is a real pattern (Sara05)
+    # but 82 at the end of a long strong passphrase is just a number
+    personal = found_name or found_words or found_keyboard
+    if short_year and (personal or score < 40):
+        add("yellow", "Might be a short year -> " + short_year,
+            "الرقمان (" + short_year + ") قد يكونان سنة مختصرة مثل 20" + short_year +
+            " أو 19" + short_year + "، والمخترق يجرب هذا النمط كثيرًا.")
 
     # a personal word + a year is the first thing a hacker tries
     # (only when the password is weak because a long one hides it well)
