@@ -127,7 +127,7 @@ def load_wordlist(filename):
             if line == "" or line.startswith("#"):
                 continue
             word = normalize(line).strip()
-            if filename in ("tribes.txt", "nicknames.txt", "cities.txt"):
+            if filename in ("families.txt", "nicknames.txt", "cities.txt"):
                 words.update(spelling_variants(word))
             else:
                 words.add(word)
@@ -137,7 +137,7 @@ def load_wordlist(filename):
 # list name: (file English label points to remove)
 WORDLISTS = {
     "nicknames": ("nicknames.txt", "a nickname", 30),
-    "tribes": ("tribes.txt", "a tribe or family name", 30),
+    "families": ("families.txt", "a family name", 30),
     "religious": ("religious.txt", "a common religious phrase", 20),
     "cities": ("cities.txt", "a Saudi city", 15),
     "common": ("common_words.txt", "a very common password word", 30),
@@ -233,7 +233,7 @@ print("Hisn loaded", len(keyboard_names), "names typed on the wrong keyboard")
 
 ARABIC_LABELS = {
     "nicknames": "اسم تدليل",
-    "tribes": "اسم قبيلة أو عائلة",
+    "families": "اسم عائلة",
     "religious": "عبارة دينية شائعة",
     "clubs": "اسم نادٍ رياضي",
     "cities": "اسم مدينة سعودية",
@@ -243,7 +243,7 @@ ARABIC_LABELS = {
 # the reason shown after each warning
 WHY = {
     "nicknames": "اسم التدليل يعرفه المقربون ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
-    "tribes": "اسم العائلة أو القبيلة معروف ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
+    "families": "اسم العائلة معروف ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
     "religious": "العبارات الدينية يستخدمها كثيرون، فهي من أول ما يجربه المخترق.",
     "clubs": "أسماء الأندية وألقابها من أول ما يجربه المخترق، خصوصًا مع سنة بطولة.",
     "cities": "اسم المدينة مرتبط بالشخص، فيسهل على المخترق تخمينه.",
@@ -470,7 +470,7 @@ def analyze(password):
         if password[i] * 4 == password[i:i + 4]:
             found_repeat = password[i:i + 4]
 
-    # my lists: nicknames tribes clubs cities
+    # my lists: nicknames families clubs cities
     found_words = {}
     for key in wordlists:
         best = None
@@ -489,7 +489,7 @@ def analyze(password):
                 del found_words[key]
                 break
 
-    # if the name is part of a tribe/nickname we found the tribe message is better
+    # if the name is part of a family name/nickname we found that message is better
     if found_name:
         for w in found_words.values():
             if overlaps(normalized, found_name, w):

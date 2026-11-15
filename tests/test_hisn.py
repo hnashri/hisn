@@ -16,8 +16,8 @@ CASES = [
     ("3bdullah99",            ["common name -> abdullah"], 40),
     ("Hnooda@1",              ["nickname -> hnooda"], 60),
     ("Lulu@2020",             ["nickname -> lulu", "year -> 2020"], 40),
-    ("Alotaibi99",            ["tribe or family name -> alotaibi"], 40),
-    ("Hakami2005",            ["tribe or family name -> hakami", "year -> 2005"], 30),
+    ("Alotaibi99",            ["family name -> alotaibi"], 40),
+    ("Hakami2005",            ["family name -> hakami", "year -> 2005"], 30),
     ("Bismillah2020",         ["religious phrase -> bismillah", "year -> 2020"], 50),
     ("N@ssr7",                ["football club -> nassr"], 50),
     ("AlZaeem2019",           ["football club -> alzaeem", "won the"], 30),
@@ -32,10 +32,10 @@ CASES = [
     ("شفثقف",                 ["Arabic letters"], 20),
     ("P@ssw0rd",              ["common password word"], 60),
     ("ILoveYou123",           ["common password word"], 40),
-    ("Ghamdi@99",             ["tribe or family name -> ghamdi"], 60),
-    ("Shareef2020",           ["tribe or family name -> shareef", "year -> 2020"], 30),
-    ("Gahtani1",              ["tribe or family name -> gahtani"], 50),
-    ("Hakamy99",              ["tribe or family name -> hakamy"], 50),
+    ("Ghamdi@99",             ["family name -> ghamdi"], 60),
+    ("Shareef2020",           ["family name -> shareef", "year -> 2020"], 30),
+    ("Gahtani1",              ["family name -> gahtani"], 50),
+    ("Hakamy99",              ["family name -> hakamy"], 50),
 ]
 
 # strong passwords: nothing red high score
