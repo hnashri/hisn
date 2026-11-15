@@ -168,6 +168,44 @@ def check_pwned(password):
         return None
 
 
+def human_time_ar(seconds):
+    """Turn seconds into short Arabic text."""
+    if seconds < 1:
+        return "أقل من ثانية"
+    # (size of the unit, singular, plural used for 3 to 10)
+    units = [(60, "ثانية", "ثوانٍ"), (60, "دقيقة", "دقائق"), (24, "ساعة", "ساعات"),
+             (30, "يوم", "أيام"), (12, "شهر", "أشهر"), (100, "سنة", "سنوات")]
+    value = seconds
+    for size, singular, plural in units:
+        if value < size:
+            n = int(value)
+            return f"{n} {plural if 3 <= n <= 10 else singular}"
+        value /= size
+    return "أكثر من 100 سنة" if value < 10 else "قرون"
+
+
+def estimate_crack_seconds(password, known_parts, pwned):
+    """Rough time to guess the password with a fast offline attack (10 billion guesses/second).
+    known_parts = words/years/sequences we found: an attacker tries those from lists first,
+    so they count as one choice from a list instead of random characters."""
+    if pwned:
+        return 0
+    charset = 0
+    if any(c.islower() for c in password): charset += 26
+    if any(c.isupper() for c in password): charset += 26
+    if any(c.isdigit() for c in password): charset += 10
+    if any(not c.isalnum() for c in password): charset += 33
+    charset = max(charset, 10)
+
+    random_length = len(password)
+    guesses = 1
+    for part, list_size in known_parts:
+        random_length -= len(part)
+        guesses *= list_size
+    guesses *= charset ** max(random_length, 0)
+    return guesses / 10_000_000_000
+
+
 def level_for(score):
     if score >= 70:
         return "green", "قوية"
@@ -354,6 +392,16 @@ def analyze(password):
         add("yellow", "Breach check skipped (no internet)",
             "تعذّر فحص التسريبات لعدم توفر اتصال بالإنترنت.")
 
+    # ===== Time to crack =====
+    known_parts = []
+    if found_name: known_parts.append((found_name, 40_000))
+    for word in found_words.values(): known_parts.append((word, 1_000))
+    if found_year: known_parts.append((found_year, 200))
+    if found_phone: known_parts.append((found_phone.group(), 1_000_000))
+    if found_sequence: known_parts.append((found_sequence, 100))
+    if found_keyboard: known_parts.append((found_keyboard[0], 10_000))
+    crack_seconds = estimate_crack_seconds(password, known_parts, pwned)
+
     # ===== Blue info: standards that relate to this password =====
     if length < 15:
         add("blue", "NIST: minimum 8, recommended 15 characters",
@@ -372,6 +420,7 @@ def analyze(password):
             "ar": "تُلزم الهيئة الوطنية للأمن السيبراني الجهات بوضع سياسات قوية لكلمات المرور، "
                   "وكلمة المرور هذه تتماشى مع هذا التوجه."})
     return {"score": score, "color": color, "level": level_ar,
+            "crack_time": human_time_ar(crack_seconds),
             "length": length, "findings": findings}
 
 
