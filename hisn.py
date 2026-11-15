@@ -26,7 +26,20 @@ def load_names():
 names = load_names()
 print("Hisn loaded", len(names), "names")
 
+def load_saudi_words():
+    words = set()
+    with open(DATA / "saudi_words.txt", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip().lower()
+            if line and not line.startswith("#"):
+                words.add(line)
+    return words
+
+saudi_words = load_saudi_words()
+print("Hisn loaded", len(saudi_words), "Saudi words (clubs, cities)")
+
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
+leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i"}
 
 # ===== Read password =====
 password = input("Enter your password: ")
@@ -62,7 +75,10 @@ if has_symbol:
     score += 15
 
 # ===== Normalize (decode Arabizi) =====
-normalized = password.lower()
+# long digit runs (like 2024 or 0551234567) are numbers, not Arabizi letters
+normalized = re.sub(r"\d{2,}", " ", password.lower())
+for symbol, letter in leet.items():
+    normalized = normalized.replace(symbol, letter)
 for number, letter in arabizi.items():
     normalized = normalized.replace(number, letter)
 
@@ -100,6 +116,13 @@ for i in range(len(password) - 3):
     if password[i] * 4 == password[i:i+4]:
         found_repeat = password[i:i+4]
 
+# ===== Search for Saudi clubs and cities =====
+found_saudi = None
+for w in saudi_words:
+    if w in normalized:
+        if found_saudi is None or len(w) > len(found_saudi):
+            found_saudi = w
+
 # ===== Search for Saudi phone numbers =====
 found_phone = re.search(r"(9665|05|5)\d{8}", password)
 
@@ -118,6 +141,9 @@ if found_sequence:
 if found_repeat:
     score -= 20
     print("Warning: contains repeated characters ->", found_repeat)
+if found_saudi and found_saudi != found_name:
+    score -= 20
+    print("Warning: contains a Saudi club or city ->", found_saudi)
 if found_phone:
     score -= 30
     print("Warning: contains a Saudi phone number ->", found_phone.group())
