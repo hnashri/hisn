@@ -123,4 +123,4 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 Made by **Hind Nashri**, IT student (Cybersecurity track), Saudi Arabia.
 [LinkedIn](https://www.linkedin.com/in/hind-nashri-22a2a82b5/)
 
-License: [MIT](LICENSE)
+© 2026 Hind Nashri. All rights reserved.
