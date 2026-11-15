@@ -33,6 +33,9 @@ CASES = [
     ("P@ssw0rd",              ["common password word"], 60),
     ("ILoveYou123",           ["common password word"], 40),
     ("Ghamdi@99",             ["tribe or family name -> ghamdi"], 60),
+    ("Shareef2020",           ["tribe or family name -> shareef", "year -> 2020"], 30),
+    ("Gahtani1",              ["tribe or family name -> gahtani"], 50),
+    ("Hakamy99",              ["tribe or family name -> hakamy"], 50),
 ]
 
 # strong passwords: nothing red, high score

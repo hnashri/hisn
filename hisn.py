@@ -61,13 +61,37 @@ def normalize_with_mask(text):
 def normalize(text):
     return normalize_with_mask(text)[0]
 
+def spelling_variants(word):
+    # the same Arabic name can be written many ways in English:
+    # sharif / shareef / shereef, qahtani / gahtani, hakami / hakamy / hakamee
+    variants = {word}
+    swaps = [("ee", "i"), ("i", "ee"), ("oo", "u"), ("u", "oo"), ("ou", "u"),
+             ("aa", "a"), ("q", "g"), ("q", "k"), ("a", "e")]
+    for old, new in swaps:
+        for v in list(variants):
+            if old in v:
+                variants.add(v.replace(old, new, 1))
+    for v in list(variants):
+        if v.endswith("i"):
+            variants.update({v[:-1] + "y", v[:-1] + "ee", v[:-1] + "ie"})
+        # double letters: mujarrashi <-> mujarashi
+        for i in range(len(v) - 1):
+            if v[i] == v[i + 1] and v[i].isalpha() and v[i] not in "aeiou":
+                variants.add(v[:i] + v[i + 1:])
+    return variants
+
+
 def load_wordlist(filename):
     words = set()
     with open(DATA / filename, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#"):
-                words.add(normalize(line).strip())
+                word = normalize(line).strip()
+                if filename in ("tribes.txt", "nicknames.txt", "cities.txt"):
+                    words.update(spelling_variants(word))
+                else:
+                    words.add(word)
     return words
 
 # each list: (file, label shown to the user, points removed)
@@ -123,7 +147,9 @@ COMMON_ARABIC_WORDS = ["السلام", "حبيبي", "حبيبتي", "الله",
 def add_keyed(keyed, arabic):
     keys = to_english_keys(arabic)
     # 3 keys is enough if it has a symbol key like ] ; ' (rare in normal words)
-    if len(keys) >= 4 or (len(keys) == 3 and any(not k.isalpha() for k in keys)):
+    # all-letter keys need 5+ (short ones look like normal English letters)
+    has_symbol = any(not k.isalpha() for k in keys)
+    if len(keys) >= 5 or (len(keys) >= 3 and has_symbol):
         keyed[keys] = DIACRITICS.sub("", arabic)
 
 def load_keyboard_names():
@@ -342,8 +368,13 @@ def analyze(password):
     # ignore it if it's inside a word we already found (hali in madkhali)
     if found_keyboard:
         known = list(found_words.values()) + ([found_name] if found_name else [])
-        if any(found_keyboard[0] in w for w in known):
-            found_keyboard = None
+        k = found_keyboard[0]
+        k_pos = low.find(k)
+        for w in known:
+            w_pos = low.find(w)
+            if k in w or (w_pos != -1 and k_pos < w_pos + len(w) and w_pos < k_pos + len(k)):
+                found_keyboard = None
+                break
 
     # Arabic letters (keyboard left on Arabic)
     has_arabic = any("؀" <= c <= "ۿ" for c in password)
