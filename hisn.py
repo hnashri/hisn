@@ -1,6 +1,8 @@
 import csv
 import json
+import hashlib
 import re
+import urllib.request
 from pathlib import Path
 
 # ===== Load data =====
@@ -145,6 +147,26 @@ ARABIC_LABELS = {
     "clubs": "اسم نادٍ رياضي",
     "cities": "اسم مدينة سعودية",
 }
+
+def check_pwned(password):
+    """How many times this password appeared in real data breaches (Have I Been Pwned).
+    Uses k-anonymity: only the first 5 characters of the SHA-1 hash leave the computer,
+    never the password itself. Returns None if there is no internet."""
+    sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+    prefix, suffix = sha1[:5], sha1[5:]
+    request = urllib.request.Request(
+        "https://api.pwnedpasswords.com/range/" + prefix,
+        headers={"User-Agent": "Hisn-password-checker", "Add-Padding": "true"})
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            for line in response.read().decode("utf-8").splitlines():
+                hash_suffix, count = line.split(":")
+                if hash_suffix == suffix:
+                    return int(count)
+        return 0
+    except Exception:
+        return None
+
 
 def level_for(score):
     if score >= 70:
@@ -320,6 +342,17 @@ def analyze(password):
     if (found_name or found_words or found_keyboard) and found_year:
         add("red", "A personal word + a year together = very easy to guess",
             "الجمع بين كلمة شخصية وسنة يجعل كلمة المرور سهلة التخمين جدًا.")
+
+    # ===== Data breach check (Have I Been Pwned) =====
+    pwned = check_pwned(password)
+    if pwned:
+        score -= 50
+        add("red", "Found in data breaches " + str(pwned) + " times",
+            "ظهرت كلمة المرور هذه في تسريبات بيانات حقيقية " + f"{pwned:,}" +
+            " مرة. يجب عدم استخدامها أبدًا، لأن المخترقين يجربون الكلمات المسربة أولًا.")
+    elif pwned is None:
+        add("yellow", "Breach check skipped (no internet)",
+            "تعذّر فحص التسريبات لعدم توفر اتصال بالإنترنت.")
 
     # ===== Blue info: standards that relate to this password =====
     if length < 15:
