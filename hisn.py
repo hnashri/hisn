@@ -61,6 +61,46 @@ for key, (filename, label, points) in WORDLISTS.items():
     wordlists[key] = load_wordlist(filename)
     print("Hisn loaded", len(wordlists[key]), key)
 
+# Arabic keyboard (Windows 101) -> the English key in the same place
+# so "السلام" typed with the keyboard on English becomes "hgsghl"
+ARABIC_KEYS = {
+    "ض": "q", "ص": "w", "ث": "e", "ق": "r", "ف": "t", "غ": "y", "ع": "u",
+    "ه": "i", "خ": "o", "ح": "p", "ج": "[", "د": "]", "ش": "a", "س": "s",
+    "ي": "d", "ب": "f", "ل": "g", "ا": "h", "ت": "j", "ن": "k", "م": "l",
+    "ك": ";", "ط": "'", "ئ": "z", "ء": "x", "ؤ": "c", "ر": "v", "ى": "n",
+    "ة": "m", "و": ",", "ز": ".", "ظ": "/", "ذ": "`",
+    "أ": "h", "إ": "h", "آ": "h",
+}
+DIACRITICS = re.compile(r"[\u064B-\u0652\u0640]")  # tashkeel + tatweel
+
+def to_english_keys(arabic_text):
+    arabic_text = DIACRITICS.sub("", arabic_text)
+    return "".join(ARABIC_KEYS.get(ch, "") for ch in arabic_text)
+
+# common Arabic words people type as passwords
+COMMON_ARABIC_WORDS = ["السلام", "حبيبي", "حبيبتي", "الله", "الحمدلله", "بسمالله",
+                       "ماشاءالله", "سبحانالله", "السعودية", "سعودي", "الهلال",
+                       "النصر", "الاتحاد", "الاهلي", "الرياض", "جدة", "مكة"]
+
+def add_keyed(keyed, arabic):
+    keys = to_english_keys(arabic)
+    # 3 keys is enough if it has a symbol key like ] ; ' (rare in normal words)
+    if len(keys) >= 4 or (len(keys) == 3 and any(not k.isalpha() for k in keys)):
+        keyed[keys] = DIACRITICS.sub("", arabic)
+
+def load_keyboard_names():
+    keyed = {}
+    with open(DATA / "muslim_names.csv", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            arabic = row["arabic_name"].strip()
+            add_keyed(keyed, arabic)
+    for word in COMMON_ARABIC_WORDS:
+        add_keyed(keyed, word)
+    return keyed
+
+keyboard_names = load_keyboard_names()
+print("Hisn loaded", len(keyboard_names), "names typed on the wrong keyboard")
+
 # ===== Read password =====
 password = input("Enter your password: ")
 length = len(password)
@@ -151,6 +191,17 @@ def overlaps(a, b):
 if found_name and any(overlaps(found_name, w) for w in found_words.values()):
     found_name = None
 
+# ===== Search for Arabic names typed with the keyboard on English =====
+found_keyboard = None
+low_pw = password.lower()
+for keys, arabic in keyboard_names.items():
+    if keys in low_pw:
+        if found_keyboard is None or len(keys) > len(found_keyboard[0]):
+            found_keyboard = (keys, arabic)
+
+# ===== Search for Arabic letters (keyboard left on Arabic) =====
+has_arabic = any("\u0600" <= c <= "\u06FF" for c in password)
+
 # ===== Search for Saudi phone numbers =====
 found_phone = re.search(r"(9665|05|5)\d{8}", password)
 
@@ -175,11 +226,19 @@ for key, word in found_words.items():
     score -= points
     print("Warning: contains " + label + " ->", word)
     already_counted.add(word)
+if found_keyboard:
+    score -= 30
+    print("Warning: an Arabic name or word typed on the English keyboard ->", found_keyboard[0])
+if has_arabic:
+    intended = "".join(ARABIC_KEYS.get(c, c) for c in password)
+    print("Warning: contains Arabic letters - the keyboard may be set to Arabic.")
+    print("         Many sites reject them and you could get locked out.")
+    print("         On an English keyboard you would have typed ->", intended)
 if found_phone:
     score -= 30
     print("Warning: contains a Saudi phone number ->", found_phone.group())
 
-if (found_name or found_words) and found_year:
+if (found_name or found_words or found_keyboard) and found_year:
     print("DANGER: a personal word + a year together = very easy to guess!")
 
 # ===== Final score =====
