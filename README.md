@@ -101,7 +101,7 @@ Looking at the 6 false alarms: 3 are passwords that really do have a name or cit
 
 **v1.1 (small fixes after the fair test):** long sequences like `1234567890` now count as one easy pattern, long phrases like `inshallah` are found even when glued to other letters, `saudi` and `ksa` were added to the common words, short numbers like `789` at the end of a strong passphrase no longer give a note, and strong passwords without digits or symbols get a note that some sites still require them. Since these fixes came from the 50 cases above, those cases are now "seen" too. The next fair test needs a new set.
 
-Hisn is a demo and a learning project, and it will keep growing. The next big step (v2) is to make it Arab-wide, not only Saudi.
+Hisn is a demo and a learning project, and it will keep growing.
 
 Run it yourself: `python tests/run_benchmark.py` (or `python tests/run_benchmark.py tests/heldout_50.csv`) and `python tests/compare_zxcvbn.py` (needs `pip install zxcvbn`). The versions are tagged `v0-baseline` and `v1`.
 
@@ -165,15 +165,6 @@ See [data/SOURCES.md](data/SOURCES.md). The name lists come from open datasets (
 - Very short names (3 letters like `ali`) are skipped to avoid false alarms.
 - The names list is global, so it has names that are also English words. A list of common English words (from zxcvbn) keeps them quiet on strong passwords, but rare words like `aster` can still show up.
 - A name has to be a whole word, so two names glued in lowercase (`ahmedali`) may be missed. `AhmedAli` works.
-- Hisn has not been compared with other meters yet (planned, see below).
-
-## Future ideas
-
-- Learn how parts are usually ordered (name then symbol then year) from real data, using a probabilistic grammar (PCFG).
-- Compare Hisn with [zxcvbn](https://github.com/dropbox/zxcvbn) on a set of Saudi style passwords I write myself.
-- v2: support more Arab countries (clubs, cities, family names and Arabizi styles from the Gulf, Egypt, the Levant and the Maghreb).
-- Grow the nickname and family name lists.
-- Check passwords against an organization's own policy.
 
 ---
 
