@@ -53,6 +53,33 @@ This is why a long passphrase like `purple-kettle-drift-mango` is strong even wi
 
 A 2018 study, [*Your Culture is in Your Password*](https://elmi.hbku.edu.qa/en/publications/your-culture-is-in-your-password-an-analysis-of-a-demographically/), analyzed a leak from a Middle Eastern bank and found that a popular password meter rated these passwords **stronger than they really were**, and that adding local context made it more accurate. Hisn is my attempt at that local context for Saudi users.
 
+## Evaluation
+
+An outside reviewer (another AI assistant, not me) wrote **101 test cases** for Hisn: Saudi style passwords that have a pattern, "trap" passwords that should not trigger anything, and edge cases. The expected answers are the reviewer's opinion, not a ground truth. All passwords are made up.
+
+**Baseline (v0, before any fix):**
+
+| | Result |
+|---|---|
+| Same strength level as expected | **72 of 101** |
+| Found a pattern when there was one (lenient) | 68 of 74 |
+| Found the **main** pattern, not just the year (strict) | about 58 of 74 |
+| False alarms on the 27 traps | 9 (only notes, all 9 still scored strong) |
+
+**Hisn vs [zxcvbn](https://github.com/dropbox/zxcvbn) on the same 101 cases:**
+
+| | Hisn | zxcvbn |
+|---|---|---|
+| Same strength level as expected | **72** | 32 |
+| Saudi pattern passwords rated **strong** | 6 of 74 | **53 of 74** |
+| Trap passwords rated strong | 26 of 27 | 26 of 27 |
+
+zxcvbn rates passwords like `A7mad_1446`, `AlHilal_2021`, `Bismillah_1441` and even the phone number `0557812463` as strong. Hisn rates 37 of those 53 as weak. Both tools agree on the trap passwords, so Hisn is not just calling everything weak.
+
+What Hisn still misses: phone numbers with spaces or dashes, Arabizi without vowels (`3bd-7sn`), Arabizi phrases (`SbahAlkhair`), new nicknames (`Dadoosh`), and 3 letter names like `Ali` (skipped on purpose). It also gives a noisy "short year" note on some long passphrases.
+
+Run it yourself: `python tests/run_benchmark.py` and `python tests/compare_zxcvbn.py` (needs `pip install zxcvbn`). This version is tagged `v0-baseline`. Results after my fixes will be reported separately, on new cases I have not seen.
+
 ## Privacy
 
 - Hisn does not save or log the password.
