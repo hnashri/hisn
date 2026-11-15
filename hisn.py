@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from pathlib import Path
 
 # ===== Load data =====
@@ -81,6 +82,27 @@ for i in range(len(password) - 3):
         if 1950 <= year <= 2030 or 1370 <= year <= 1460:
             found_year = part
 
+# ===== Search for sequences =====
+sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
+             "qwertyuiop", "asdfghjkl", "zxcvbnm"]
+
+found_sequence = None
+low = password.lower()
+for seq in sequences:
+    for i in range(len(seq) - 3):
+        chunk = seq[i:i+4]
+        if chunk in low or chunk[::-1] in low:
+            found_sequence = chunk
+
+# ===== Search for repeated characters =====
+found_repeat = None
+for i in range(len(password) - 3):
+    if password[i] * 4 == password[i:i+4]:
+        found_repeat = password[i:i+4]
+
+# ===== Search for Saudi phone numbers =====
+found_phone = re.search(r"(9665|05|5)\d{8}", password)
+
 # ===== Warnings =====
 if found_name:
     score -= 30
@@ -90,7 +112,17 @@ if found_year:
     print("Warning: contains a year ->", found_year)
 if found_name and found_year:
     print("DANGER: name + year together = very easy to guess!")
+if found_sequence:
+    score -= 20
+    print("Warning: contains an easy sequence ->", found_sequence)
+if found_repeat:
+    score -= 20
+    print("Warning: contains repeated characters ->", found_repeat)
+if found_phone:
+    score -= 30
+    print("Warning: contains a Saudi phone number ->", found_phone.group())
 
+# ===== Final score =====
 if score < 0:
     score = 0
 
