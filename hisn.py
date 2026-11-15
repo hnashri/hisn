@@ -37,10 +37,10 @@ print("Hisn loaded", len(names), "names")
 
 # turning A7med into ahmed
 
-# people write Arabic letters with numbers: 7 = h, 3 = a (ع) ...
+# people write Arabic letters with numbers: 7 = h, 3 = a (ع)
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
 
-# and swap letters with symbols: @ = a, 0 = o ...
+# and swap letters with symbols: @ = a, 0 = o
 leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i", "4": "a"}
 
 
@@ -156,7 +156,7 @@ def load_clubs():
     with open(DATA / "clubs.json", encoding="utf-8") as f:
         clubs = json.load(f)
 
-    # alzaeem -> hilal, alalami -> nassr ...
+    # alzaeem -> hilal, alalami -> nassr
     aliases = {}
     for club in clubs:
         for name in clubs[club]["names"]:
@@ -470,7 +470,7 @@ def analyze(password):
         if password[i] * 4 == password[i:i + 4]:
             found_repeat = password[i:i + 4]
 
-    # my lists: nicknames, tribes, clubs, cities ...
+    # my lists: nicknames, tribes, clubs, cities
     found_words = {}
     for key in wordlists:
         best = None

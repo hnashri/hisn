@@ -1,4 +1,4 @@
-# Test cases for Hisn: each password + what Hisn should find in it.
+# Test cases for Hisn: each password + what Hisn should find in it
 # run them with:  python -m unittest discover -s tests
 import sys
 import unittest
