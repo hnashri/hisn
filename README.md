@@ -52,6 +52,8 @@ So Hisn uses NIST for the numbers and explains the Saudi requirements as notes.
 
 ## Run it
 
+The checker is plain Python. The interface is built with [Streamlit](https://streamlit.io), a ready-made Python framework for simple web apps.
+
 ```bash
 pip install streamlit
 python -m streamlit run app.py

@@ -37,7 +37,7 @@ if st.session_state.page == "welcome":
     st.markdown("""
     <div class="center">
       <h1>حصن</h1>
-      <h3>كلمة مرورك، هل هي آمنة فعلًا؟</h3>
+      <h3>هل كلمة مرورك آمنة فعلًا؟</h3>
       <p>حصن يفحصها كما يفكر المخترق العربي.</p>
     </div>
     """, unsafe_allow_html=True)
