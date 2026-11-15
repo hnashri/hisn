@@ -11,7 +11,7 @@ from pathlib import Path
 DATA = Path(__file__).parent / "data"
 
 
-# ---------- names ----------
+# names
 
 def load_names():
     names = set()
@@ -35,7 +35,7 @@ names = load_names()
 print("Hisn loaded", len(names), "names")
 
 
-# ---------- turning A7med into ahmed ----------
+# turning A7med into ahmed
 
 # people write Arabic letters with numbers: 7 = h, 3 = a (ع) ...
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
@@ -117,7 +117,7 @@ def spelling_variants(word):
     return variants
 
 
-# ---------- my word lists (data folder) ----------
+# my word lists (data folder)
 
 def load_wordlist(filename):
     words = set()
@@ -150,7 +150,7 @@ for key in WORDLISTS:
     print("Hisn loaded", len(wordlists[key]), key)
 
 
-# ---------- clubs (names, nicknames, title years) ----------
+# clubs (names, nicknames, title years)
 
 def load_clubs():
     with open(DATA / "clubs.json", encoding="utf-8") as f:
@@ -171,7 +171,7 @@ WORDLISTS["clubs"] = ("clubs.json", "a Saudi football club", 20)
 print("Hisn loaded", len(clubs), "clubs")
 
 
-# ---------- Arabic words typed with the keyboard on English ----------
+# Arabic words typed with the keyboard on English
 
 # each Arabic letter and the English key in the same place
 # so "السلام" becomes "hgsghl" if you forget to switch the keyboard
@@ -229,7 +229,7 @@ keyboard_names = load_keyboard_names()
 print("Hisn loaded", len(keyboard_names), "names typed on the wrong keyboard")
 
 
-# ---------- messages ----------
+# messages
 
 ARABIC_LABELS = {
     "nicknames": "اسم تدليل",
@@ -251,7 +251,7 @@ WHY = {
 }
 
 
-# ---------- data breaches (Have I Been Pwned) ----------
+# data breaches (Have I Been Pwned)
 
 def check_pwned(password):
     # I never send the password. I hash it with sha1 and send only the first 5
@@ -278,7 +278,7 @@ def check_pwned(password):
     return 0
 
 
-# ---------- time to crack ----------
+# time to crack
 
 def human_time_ar(seconds):
     if seconds < 1:
@@ -333,7 +333,7 @@ def estimate_crack_seconds(password, known_parts, pwned):
     return guesses / 10_000_000_000
 
 
-# ---------- small helpers ----------
+# small helpers
 
 def any_char(password, kind):
     for c in password:
@@ -365,7 +365,7 @@ def level_for(score):
     return "red", "ضعيفة"
 
 
-# ---------- the main check ----------
+# the main check
 
 def analyze(password):
     findings = []
@@ -381,7 +381,7 @@ def analyze(password):
     has_digit = any_char(password, "digit")
     has_symbol = any_char(password, "symbol")
 
-    # --- start with length and character types ---
+    # start with length and character types
     score = 0
     if length >= 12:
         score += 40
@@ -413,10 +413,10 @@ def analyze(password):
         add("yellow", "Missing character types",
             "لا تحتوي كلمة المرور على: " + "، ".join(missing) + ".")
 
-    # --- decode A7med -> ahmed before searching ---
+    # decode A7med -> ahmed before searching
     normalized, changed = normalize_with_mask(password)
 
-    # --- names (the longest one wins) ---
+    # names (the longest one wins)
     # a name only counts if at most 1 letter came from a symbol,
     # otherwise random passwords like x9#Lm@Rt give fake names
     found_name = None
@@ -431,7 +431,7 @@ def analyze(password):
             if found_name is None or len(n) > len(found_name):
                 found_name = n
 
-    # --- years (gregorian 1950-2030, hijri 1370-1460) ---
+    # years (gregorian 1950-2030, hijri 1370-1460)
     found_year = None
     for i in range(len(password) - 3):
         part = password[i:i + 4]
@@ -440,7 +440,7 @@ def analyze(password):
             if 1950 <= year <= 2030 or 1370 <= year <= 1460:
                 found_year = part
 
-    # --- sequences like 1234, abcd, qwerty ---
+    # sequences like 1234, abcd, qwerty
     sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
                  "qwertyuiop", "asdfghjkl", "zxcvbnm"]
     found_sequence = None
@@ -451,7 +451,7 @@ def analyze(password):
             if chunk in low or backwards in low:
                 found_sequence = chunk
 
-    # --- short ones like 123 or 987 (not inside a year like 2012) ---
+    # short ones like 123 or 987 (not inside a year like 2012)
     short_sequence = None
     if not found_sequence:
         text = low
@@ -464,13 +464,13 @@ def analyze(password):
             elif chunk[::-1] in text:
                 short_sequence = chunk[::-1]
 
-    # --- aaaa or 1111 ---
+    # aaaa or 1111
     found_repeat = None
     for i in range(len(password) - 3):
         if password[i] * 4 == password[i:i + 4]:
             found_repeat = password[i:i + 4]
 
-    # --- my lists: nicknames, tribes, clubs, cities ... ---
+    # my lists: nicknames, tribes, clubs, cities ...
     found_words = {}
     for key in wordlists:
         best = None
@@ -496,7 +496,7 @@ def analyze(password):
                 found_name = None
                 break
 
-    # --- Arabic word typed on the English keyboard ---
+    # Arabic word typed on the English keyboard
     found_keyboard = None
     for keys in keyboard_names:
         if keys in low:
@@ -513,16 +513,16 @@ def analyze(password):
                 found_keyboard = None
                 break
 
-    # --- Arabic letters = the keyboard was left on Arabic ---
+    # Arabic letters = the keyboard was left on Arabic
     has_arabic = False
     for c in password:
         if "؀" <= c <= "ۿ":
             has_arabic = True
 
-    # --- Saudi mobile number: 05xxxxxxxx, 9665xxxxxxxx or 5xxxxxxxx ---
+    # Saudi mobile number: 05xxxxxxxx, 9665xxxxxxxx or 5xxxxxxxx
     found_phone = re.search(r"(9665|05|5)\d{8}", password)
 
-    # ---------- warnings ----------
+    # warnings
 
     if found_name:
         score -= 30
@@ -618,7 +618,7 @@ def analyze(password):
                 "الجمع بين (" + word + ") والسنة (" + found_year + ") يجعل كلمة المرور سهلة التخمين جدًا؛ "
                 "هذا أول نمط يجربه المخترق.")
 
-    # ---------- data breaches ----------
+    # data breaches
 
     pwned = check_pwned(password)
     if pwned:
@@ -630,7 +630,7 @@ def analyze(password):
         add("yellow", "Breach check skipped (no internet)",
             "تعذّر فحص التسريبات لعدم توفر اتصال بالإنترنت.")
 
-    # ---------- time to crack ----------
+    # time to crack
 
     # (part we found, how big the list a hacker would use is)
     known_parts = []
@@ -648,7 +648,7 @@ def analyze(password):
         known_parts.append((found_keyboard[0], 10000))
     crack_seconds = estimate_crack_seconds(password, known_parts, pwned)
 
-    # ---------- blue notes (standards) ----------
+    # blue notes (standards)
 
     if length < 15:
         add("blue", "NIST: minimum 8, recommended 15 characters",

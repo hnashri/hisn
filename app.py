@@ -32,7 +32,7 @@ header[data-testid="stHeader"] {
 if "page" not in st.session_state:
     st.session_state.page = "welcome"
 
-# ---------- welcome page ----------
+# welcome page
 if st.session_state.page == "welcome":
     st.markdown("""
     <div class="center">
@@ -48,7 +48,7 @@ if st.session_state.page == "welcome":
             st.session_state.page = "check"
             st.rerun()
 
-# ---------- check page ----------
+# check page
 else:
     st.title("حصن")
     password = st.text_input("كلمة المرور", type="password")
