@@ -213,6 +213,12 @@ for keys, arabic in keyboard_names.items():
         if found_keyboard is None or len(keys) > len(found_keyboard[0]):
             found_keyboard = (keys, arabic)
 
+# skip it if it is just a piece of a word we already found (like "hali" in "madkhali")
+if found_keyboard:
+    known = [w for w in found_words.values()] + ([found_name] if found_name else [])
+    if any(found_keyboard[0] in w for w in known):
+        found_keyboard = None
+
 # ===== Search for Arabic letters (keyboard left on Arabic) =====
 has_arabic = any("\u0600" <= c <= "\u06FF" for c in password)
 
