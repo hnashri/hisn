@@ -1,4 +1,4 @@
-# Hisn - a password checker that understands Arabic names, Arabizi and Hijri years
+# Hisn - a password checker that understands Arabic names and Arabizi and Hijri years
 # by Hind Nashri
 
 import csv
@@ -37,10 +37,10 @@ print("Hisn loaded", len(names), "names")
 
 # turning A7med into ahmed
 
-# people write Arabic letters with numbers: 7 = h, 3 = a (ع)
+# people write Arabic letters with numbers like 7 = h and 3 = a (ع)
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
 
-# and swap letters with symbols: @ = a, 0 = o
+# and swap letters with symbols like @ = a and 0 = o
 leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i", "4": "a"}
 
 
@@ -53,7 +53,7 @@ def normalize_with_mask(text):
     i = 0
 
     while i < len(text):
-        # 2024 or 0551234567 are numbers, not Arabizi, so I skip them
+        # 2024 or 0551234567 are numbers not Arabizi so I skip them
         if text[i].isdigit():
             j = i
             while j < len(text) and text[j].isdigit():
@@ -90,8 +90,8 @@ def normalize(text):
 
 
 def spelling_variants(word):
-    # same Arabic name, different English spelling:
-    # sharif / shareef / shereef, qahtani / gahtani, hakami / hakamy
+    # same Arabic name different English spelling:
+    # sharif / shareef / shereef qahtani / gahtani hakami / hakamy
     variants = {word}
 
     swaps = [("ee", "i"), ("i", "ee"), ("oo", "u"), ("u", "oo"), ("ou", "u"),
@@ -102,7 +102,7 @@ def spelling_variants(word):
                 variants.add(v.replace(old, new, 1))
 
     for v in list(variants):
-        # hakami -> hakamy, hakamee, hakamie
+        # hakami -> hakamy hakamee hakamie
         if v.endswith("i"):
             start = v[:-1]
             variants.add(start + "y")
@@ -134,7 +134,7 @@ def load_wordlist(filename):
     return words
 
 
-# list name: (file, English label, points to remove)
+# list name: (file English label points to remove)
 WORDLISTS = {
     "nicknames": ("nicknames.txt", "a nickname", 30),
     "tribes": ("tribes.txt", "a tribe or family name", 30),
@@ -150,13 +150,13 @@ for key in WORDLISTS:
     print("Hisn loaded", len(wordlists[key]), key)
 
 
-# clubs (names, nicknames, title years)
+# clubs (names nicknames title years)
 
 def load_clubs():
     with open(DATA / "clubs.json", encoding="utf-8") as f:
         clubs = json.load(f)
 
-    # alzaeem -> hilal, alalami -> nassr
+    # alzaeem -> hilal alalami -> nassr
     aliases = {}
     for club in clubs:
         for name in clubs[club]["names"]:
@@ -184,7 +184,7 @@ ARABIC_KEYS = {
     "أ": "h", "إ": "h", "آ": "h",
 }
 
-# tashkeel and tatweel, removed before converting
+# tashkeel and tatweel removed before converting
 DIACRITICS = re.compile(r"[ً-ْـ]")
 
 COMMON_ARABIC_WORDS = ["السلام", "حبيبي", "حبيبتي", "الله", "الحمدلله", "بسمالله",
@@ -209,7 +209,7 @@ def add_keyed(keyed, arabic):
         if not k.isalpha():
             has_symbol = True
 
-    # short letter-only keys look like normal English, so they need 5+
+    # short letter-only keys look like normal English so they need 5+
     # with a symbol like ] or ; even 3 is enough (هند = ik])
     if len(keys) >= 5 or (len(keys) >= 3 and has_symbol):
         keyed[keys] = DIACRITICS.sub("", arabic)
@@ -240,7 +240,7 @@ ARABIC_LABELS = {
     "common": "كلمة شائعة جدًا في كلمات المرور",
 }
 
-# the reason, shown after each warning
+# the reason shown after each warning
 WHY = {
     "nicknames": "اسم التدليل يعرفه المقربون ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
     "tribes": "اسم العائلة أو القبيلة معروف ويظهر في الحسابات، فيسهل على المخترق تخمينه.",
@@ -255,7 +255,7 @@ WHY = {
 
 def check_pwned(password):
     # I never send the password. I hash it with sha1 and send only the first 5
-    # characters, the site sends back all hashes that start with them and I
+    # characters the site sends back all hashes that start with them and I
     # compare the rest here (this is called k-anonymity)
     sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
     prefix = sha1[:5]
@@ -284,7 +284,7 @@ def human_time_ar(seconds):
     if seconds < 1:
         return "أقل من ثانية"
 
-    # (how many of this unit make the next one, singular, plural for 3-10)
+    # (how many of this unit make the next one singular plural for 3-10)
     units = [(60, "ثانية", "ثوانٍ"), (60, "دقيقة", "دقائق"), (24, "ساعة", "ساعات"),
              (30, "يوم", "أيام"), (12, "شهر", "أشهر"), (100, "سنة", "سنوات")]
 
@@ -319,8 +319,8 @@ def estimate_crack_seconds(password, known_parts, pwned):
     if charset < 10:
         charset = 10
 
-    # a name or a year isn't guessed letter by letter, the hacker picks it
-    # from a list, so it counts as one choice from that list
+    # a name or a year isn't guessed letter by letter the hacker picks it
+    # from a list so it counts as one choice from that list
     random_length = len(password)
     guesses = 1
     for part, list_size in known_parts:
@@ -417,7 +417,7 @@ def analyze(password):
     normalized, changed = normalize_with_mask(password)
 
     # names (the longest one wins)
-    # a name only counts if at most 1 letter came from a symbol,
+    # a name only counts if at most 1 letter came from a symbol
     # otherwise random passwords like x9#Lm@Rt give fake names
     found_name = None
     for n in names:
@@ -431,7 +431,7 @@ def analyze(password):
             if found_name is None or len(n) > len(found_name):
                 found_name = n
 
-    # years (gregorian 1950-2030, hijri 1370-1460)
+    # years (gregorian 1950-2030 hijri 1370-1460)
     found_year = None
     for i in range(len(password) - 3):
         part = password[i:i + 4]
@@ -440,7 +440,7 @@ def analyze(password):
             if 1950 <= year <= 2030 or 1370 <= year <= 1460:
                 found_year = part
 
-    # sequences like 1234, abcd, qwerty
+    # sequences like 1234 abcd qwerty
     sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
                  "qwertyuiop", "asdfghjkl", "zxcvbnm"]
     found_sequence = None
@@ -470,7 +470,7 @@ def analyze(password):
         if password[i] * 4 == password[i:i + 4]:
             found_repeat = password[i:i + 4]
 
-    # my lists: nicknames, tribes, clubs, cities
+    # my lists: nicknames tribes clubs cities
     found_words = {}
     for key in wordlists:
         best = None
@@ -481,7 +481,7 @@ def analyze(password):
         if best:
             found_words[key] = best
 
-    # hamdi is inside ghamdi, so keep only ghamdi
+    # hamdi is inside ghamdi so keep only ghamdi
     for key in list(found_words):
         word = found_words[key]
         for other in found_words.values():
@@ -489,7 +489,7 @@ def analyze(password):
                 del found_words[key]
                 break
 
-    # if the name is part of a tribe/nickname we found, the tribe message is better
+    # if the name is part of a tribe/nickname we found the tribe message is better
     if found_name:
         for w in found_words.values():
             if overlaps(normalized, found_name, w):
@@ -519,7 +519,7 @@ def analyze(password):
         if "؀" <= c <= "ۿ":
             has_arabic = True
 
-    # Saudi mobile number: 05xxxxxxxx, 9665xxxxxxxx or 5xxxxxxxx
+    # Saudi mobile number: 05xxxxxxxx 9665xxxxxxxx or 5xxxxxxxx
     found_phone = re.search(r"(9665|05|5)\d{8}", password)
 
     # warnings
@@ -632,7 +632,7 @@ def analyze(password):
 
     # time to crack
 
-    # (part we found, how big the list a hacker would use is)
+    # (part we found how big the list a hacker would use is)
     known_parts = []
     if found_name:
         known_parts.append((found_name, 40000))

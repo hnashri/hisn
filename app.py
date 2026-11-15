@@ -4,7 +4,7 @@
 import streamlit as st
 from hisn import analyze
 
-# Arabic font, right to left, and the pattern bar at the top
+# Arabic font right to left and the pattern bar at the top
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
@@ -27,7 +27,7 @@ header[data-testid="stHeader"] {
 </style>
 """, unsafe_allow_html=True)
 
-# streamlit runs the whole file again on every click,
+# streamlit runs the whole file again on every click
 # so I keep the current page in session_state
 if "page" not in st.session_state:
     st.session_state.page = "welcome"
@@ -57,7 +57,7 @@ else:
     if st.button("افحص") and password:
         result = analyze(password)
 
-        # streamlit has no "yellow" text color, so orange is used instead
+        # streamlit has no "yellow" text color so orange is used instead
         if result["color"] == "yellow":
             color = "orange"
         else:
@@ -68,7 +68,7 @@ else:
         st.markdown(f"**المستوى:** :{color}[{result['level']}]")
         st.progress(result["score"] / 100)
 
-        # problems (red/yellow) first, blue notes after them
+        # problems (red/yellow) first blue notes after them
         problems = []
         infos = []
         for f in result["findings"]:

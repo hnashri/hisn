@@ -10,7 +10,7 @@ import hisn
 hisn.check_pwned = lambda password: 0   # no internet needed for tests
 
 CASES = [
-    # (password, words that must appear in the English findings, max score)
+    # (password words that must appear in the English findings max score)
     ("A7med_1415",            ["common name -> ahmed", "year -> 1415"], 40),
     ("Hind@1426",             ["common name -> hind", "year -> 1426"], 40),
     ("3bdullah99",            ["common name -> abdullah"], 40),
@@ -38,7 +38,7 @@ CASES = [
     ("Hakamy99",              ["tribe or family name -> hakamy"], 50),
 ]
 
-# strong passwords: nothing red, high score
+# strong passwords: nothing red high score
 STRONG = ["x9#Lm!pQ2v@Rt", "Qahwa-Sabah-Jabal-77!K"]
 
 
@@ -70,7 +70,7 @@ class TestHisn(unittest.TestCase):
         self.assertNotIn("short number sequence", text)
 
     def test_years_are_not_arabizi(self):
-        # 2024 is a year, not "a0a4" letters
+        # 2024 is a year not "a0a4" letters
         result = hisn.analyze("Hilal@2024")
         names = [f["en"] for f in result["findings"] if "common name" in f["en"]]
         self.assertEqual(names, [])
