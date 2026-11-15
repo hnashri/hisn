@@ -29,7 +29,7 @@ names = load_names()
 print("Hisn loaded", len(names), "names")
 
 arabizi = {"2": "a", "3": "a", "5": "kh", "6": "t", "7": "h", "8": "q", "9": "s"}
-leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i"}
+leet = {"@": "a", "$": "s", "0": "o", "1": "i", "!": "i", "4": "a"}
 
 def normalize_with_mask(text):
     # changed = which letters came from a number or symbol
@@ -76,6 +76,7 @@ WORDLISTS = {
     "tribes":    ("tribes.txt", "a tribe or family name", 30),
     "religious": ("religious.txt", "a common religious phrase", 20),
     "cities":    ("cities.txt", "a Saudi city", 15),
+    "common":    ("common_words.txt", "a very common password word", 30),
 }
 
 wordlists = {}
@@ -145,6 +146,7 @@ ARABIC_LABELS = {
     "religious": "عبارة دينية شائعة",
     "clubs": "اسم نادٍ رياضي",
     "cities": "اسم مدينة سعودية",
+    "common": "كلمة شائعة جدًا في كلمات المرور",
 }
 
 def check_pwned(password):
@@ -209,6 +211,7 @@ WHY = {
     "religious": "العبارات الدينية يستخدمها كثيرون، فهي من أول ما يجربه المخترق.",
     "clubs": "أسماء الأندية وألقابها من أول ما يجربه المخترق، خصوصًا مع سنة بطولة.",
     "cities": "اسم المدينة مرتبط بالشخص، فيسهل على المخترق تخمينه.",
+    "common": "هذه الكلمات أول ما يجربه المخترق، حتى لو استُبدلت بعض حروفها برموز.",
 }
 
 
@@ -316,6 +319,11 @@ def analyze(password):
                     best = w
         if best:
             found_words[key] = best
+
+    # if one found word is inside another (hamdi inside ghamdi), keep the longer one
+    for key in list(found_words):
+        if any(found_words[key] != w and found_words[key] in w for w in found_words.values()):
+            del found_words[key]
 
     # if the name is part of a tribe/nickname/city we found, use the more specific one
     def overlaps(a, b):

@@ -30,6 +30,9 @@ CASES = [
     ("hgsghl",                ["English keyboard -> hgsghl"], 10),
     ("ik]2024",               ["English keyboard -> ik]", "year -> 2024"], 10),
     ("شفثقف",                 ["Arabic letters"], 20),
+    ("P@ssw0rd",              ["common password word"], 60),
+    ("ILoveYou123",           ["common password word"], 40),
+    ("Ghamdi@99",             ["tribe or family name -> ghamdi"], 60),
 ]
 
 # strong passwords: nothing red, high score
@@ -51,6 +54,11 @@ class TestHisn(unittest.TestCase):
             with self.subTest(password=password):
                 result = hisn.analyze(password)
                 self.assertGreaterEqual(result["score"], 70)
+
+    def test_no_nickname_inside_tribe(self):
+        result = hisn.analyze("Ghamdi@99")
+        text = " | ".join(f["en"] for f in result["findings"])
+        self.assertNotIn("nickname", text)
 
     def test_year_is_not_a_short_sequence(self):
         # 2012 has "012" inside but it's a year
