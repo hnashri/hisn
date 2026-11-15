@@ -560,13 +560,17 @@ def analyze(password):
     # sequences like 1234 abcd qwerty
     sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
                  "qwertyuiop", "asdfghjkl", "zxcvbnm"]
+    # I keep the longest one so 1234567890 counts as one sequence not just 6789
     found_sequence = None
     for seq in sequences:
-        for i in range(len(seq) - 3):
-            chunk = seq[i:i + 4]
-            backwards = chunk[::-1]
-            if chunk in low or backwards in low:
-                found_sequence = chunk
+        for direction in [seq, seq[::-1]]:
+            for size in range(len(direction), 3, -1):
+                for i in range(len(direction) - size + 1):
+                    chunk = direction[i:i + size]
+                    if chunk in low:
+                        if found_sequence is None or len(chunk) > len(found_sequence):
+                            found_sequence = chunk
+                        break
     # a sequence inside a date or a phone number is already counted there
     if found_sequence:
         if found_date and found_sequence in found_date[0]:
@@ -615,7 +619,9 @@ def analyze(password):
             pos = normalized.find(w)
             if pos == -1:
                 continue
-            if not whole_word(normalized, changed, origin, password, pos, len(w)):
+            # short words must be whole words (abha is not inside kabhab)
+            # but a long phrase like inshallah is clear even inside Inshallahok
+            if len(w) < 6 and not whole_word(normalized, changed, origin, password, pos, len(w)):
                 continue
             if best is None or len(w) > len(best):
                 best = w
@@ -687,10 +693,6 @@ def analyze(password):
         add("red", "Contains an easy sequence -> " + found_sequence,
             "تحتوي كلمة المرور على تسلسل سهل (" + found_sequence + ").")
 
-    if short_sequence:
-        add("yellow", "Contains a short number sequence -> " + short_sequence,
-            "تحتوي كلمة المرور على تسلسل أرقام قصير (" + short_sequence +
-            ")، وهو من أشهر الإضافات التي يجربها المخترق.")
 
     if found_repeat:
         add("red", "Contains repeated characters -> " + found_repeat,
@@ -793,7 +795,13 @@ def analyze(password):
 
     # a short year next to a personal word is a real pattern (Sara05)
     # but 82 at the end of a long strong passphrase is just a number
-    personal = found_name or found_words or found_keyboard
+    # (a name that is just an English word like blue doesn't count as personal)
+    personal = (found_name and not name_is_word) or found_words or found_keyboard
+    # same for 123 or 789 at the end
+    if short_sequence and (personal or score < 40):
+        add("yellow", "Contains a short number sequence -> " + short_sequence,
+            "تحتوي كلمة المرور على تسلسل أرقام قصير (" + short_sequence +
+            ")، وهو من أشهر الإضافات التي يجربها المخترق.")
     if short_year and (personal or score < 40):
         add("yellow", "Might be a short year -> " + short_year,
             "الرقمان (" + short_year + ") قد يكونان سنة مختصرة مثل 20" + short_year +
@@ -829,6 +837,13 @@ def analyze(password):
             "يطلب إطار الأمن السيبراني للبنك المركزي السعودي (ساما) من الجهات وضع سياسة "
             "توقف الوصول بعد 3 محاولات خاطئة متتالية، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة "
             "إلى إيقاف الحساب.")
+
+    # a strong password without digits or symbols is fine for NIST
+    # but many sites still ask for them so I tell the user
+    if score >= 70 and not has_arabic and (not has_digit or not has_symbol):
+        add("blue", "Some sites still require digits or symbols",
+            "كلمة مرورك قوية، لكن انتبه: بعض المواقع ما زالت تشترط وجود أرقام أو رموز، "
+            "حتى لو المعيار العالمي (NIST) لا يشترطها.")
 
     if score >= 70:
         add("blue", "NCA: entities must set strong password policies",

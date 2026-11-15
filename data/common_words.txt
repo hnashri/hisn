@@ -45,3 +45,5 @@ snapchat
 iphone
 samsung
 troubador
+saudi
+ksa

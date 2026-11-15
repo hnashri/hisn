@@ -151,6 +151,24 @@ class TestHisn(unittest.TestCase):
             text = " | ".join(f["en"] for f in hisn.analyze(p)["findings"])
             self.assertIn("Saudi phone number", text)
 
+    # v1.1 (new examples not from the test sets)
+
+    def test_long_sequence_counts_whole(self):
+        result = hisn.analyze("9876543210Xy!")
+        self.assertEqual(result["level"], "ضعيفة")
+
+    def test_long_phrase_glued_to_letters(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Alhamdulillahxy")["findings"])
+        self.assertIn("religious phrase -> alhamdulillah", text)
+
+    def test_no_short_sequence_note_on_strong_passphrase(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Cedar-Lantern-Harbor-456!")["findings"])
+        self.assertNotIn("short number sequence", text)
+
+    def test_note_when_strong_but_no_digits(self):
+        text = " | ".join(f["en"] for f in hisn.analyze("Granite-Harbor-Lemon-Sky")["findings"])
+        self.assertIn("Some sites still require digits or symbols", text)
+
 
 if __name__ == "__main__":
     unittest.main()
