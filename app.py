@@ -1,7 +1,7 @@
 import streamlit as st
 from hisn import analyze
 
-# ===== style: font, right-to-left, centering, and the Saudi pattern bar =====
+# style: font, right-to-left, centering, and the Saudi pattern bar
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
@@ -28,7 +28,7 @@ header[data-testid="stHeader"] {
 if "page" not in st.session_state:
     st.session_state.page = "welcome"
 
-# ===== Welcome page =====
+# welcome page
 if st.session_state.page == "welcome":
     st.markdown("""
     <div class="center">
@@ -44,7 +44,7 @@ if st.session_state.page == "welcome":
             st.session_state.page = "check"
             st.rerun()
 
-# ===== Check page =====
+# check page
 else:
     st.title("حصن")
     password = st.text_input("كلمة المرور", type="password")

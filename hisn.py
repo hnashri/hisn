@@ -5,7 +5,7 @@ import re
 import urllib.request
 from pathlib import Path
 
-# ===== Load data =====
+# load data
 DATA = Path(__file__).parent / "data"
 
 def load_names():
@@ -206,6 +206,16 @@ def estimate_crack_seconds(password, known_parts, pwned):
     return guesses / 10_000_000_000
 
 
+# why each kind of word is dangerous (shown after the warning)
+WHY = {
+    "nicknames": "أسماء التدليل يعرفها الأهل والأصدقاء وتظهر كثيرًا في الحسابات.",
+    "tribes": "اسم العائلة أو القبيلة معروف للجميع ويظهر في البريد والحسابات.",
+    "religious": "العبارات الدينية الشائعة موجودة في قوائم التخمين التي يستخدمها المخترقون.",
+    "clubs": "أسماء الأندية وألقابها من أول ما يجربه المخترقون، خصوصًا مع سنة بطولة.",
+    "cities": "اسم المدينة مرتبط بالشخص ويسهل معرفته من حساباته.",
+}
+
+
 def level_for(score):
     if score >= 70:
         return "green", "قوية"
@@ -223,13 +233,13 @@ def analyze(password):
 
     length = len(password)
 
-    # ===== Character types =====
+    # character types
     has_upper = any(c.isupper() for c in password)
     has_lower = any(c.islower() for c in password)
     has_digit = any(c.isdigit() for c in password)
     has_symbol = any(not c.isalnum() for c in password)
 
-    # ===== Score =====
+    # score
     score = 0
     if length >= 12:
         score += 40
@@ -247,10 +257,10 @@ def analyze(password):
         add("yellow", "Missing character types",
             "لا تحتوي كلمة المرور على: " + "، ".join(missing) + ".")
 
-    # ===== Normalize (decode Arabizi and leetspeak) =====
+    # normalize (decode Arabizi and leetspeak)
     normalized, changed = normalize_with_mask(password)
 
-    # ===== Search for names (keep the longest match) =====
+    # search for names (keep the longest match)
     # a name only counts if at most 1 of its letters came from a decoded symbol
     found_name = None
     for n in names:
@@ -261,7 +271,7 @@ def analyze(password):
             if found_name is None or len(n) > len(found_name):
                 found_name = n
 
-    # ===== Search for years (on the original password) =====
+    # search for years (on the original password)
     found_year = None
     for i in range(len(password) - 3):
         part = password[i:i+4]
@@ -270,7 +280,7 @@ def analyze(password):
             if 1950 <= year <= 2030 or 1370 <= year <= 1460:
                 found_year = part
 
-    # ===== Search for sequences =====
+    # search for sequences
     sequences = ["0123456789", "abcdefghijklmnopqrstuvwxyz",
                  "qwertyuiop", "asdfghjkl", "zxcvbnm"]
     found_sequence = None
@@ -281,13 +291,13 @@ def analyze(password):
             if chunk in low or chunk[::-1] in low:
                 found_sequence = chunk
 
-    # ===== Search for repeated characters =====
+    # search for repeated characters
     found_repeat = None
     for i in range(len(password) - 3):
         if password[i] * 4 == password[i:i+4]:
             found_repeat = password[i:i+4]
 
-    # ===== Search in the Saudi wordlists =====
+    # search in the Saudi wordlists
     found_words = {}
     for key, words in wordlists.items():
         best = None
@@ -307,7 +317,7 @@ def analyze(password):
     if found_name and any(overlaps(found_name, w) for w in found_words.values()):
         found_name = None
 
-    # ===== Arabic names typed with the keyboard on English =====
+    # Arabic names typed with the keyboard on English
     found_keyboard = None
     for keys, arabic in keyboard_names.items():
         if keys in low:
@@ -319,21 +329,27 @@ def analyze(password):
         if any(found_keyboard[0] in w for w in known):
             found_keyboard = None
 
-    # ===== Arabic letters (keyboard left on Arabic) =====
+    # Arabic letters (keyboard left on Arabic)
     has_arabic = any("؀" <= c <= "ۿ" for c in password)
 
-    # ===== Saudi phone numbers =====
+    # Saudi phone numbers
     found_phone = re.search(r"(9665|05|5)\d{8}", password)
 
-    # ===== Warnings =====
+    # warnings
     if found_name:
         score -= 30
+        pos = normalized.find(found_name)
+        disguised = any(changed[pos:pos + len(found_name)])
+        note = " حتى مع استبدال بعض الحروف بأرقام أو رموز، فهذه الحيلة معروفة." if disguised else ""
         add("red", "Contains a common name -> " + found_name,
-            "تحتوي كلمة المرور على اسم شائع (" + found_name + ").")
+            "تحتوي كلمة المرور على اسم شائع (" + found_name + ")." + note +
+            " الأسماء من أول ما يجربه المخترق، خصوصًا اسم صاحب الحساب أو أفراد عائلته.")
     if found_year:
         score -= 20
+        kind = "هجرية" if 1370 <= int(found_year) <= 1460 else "ميلادية"
         add("red", "Contains a year -> " + found_year,
-            "تحتوي كلمة المرور على سنة (" + found_year + ")، وهي من أول ما يُجرَّب عند التخمين.")
+            "تحتوي كلمة المرور على سنة " + kind + " (" + found_year + "). "
+            "سنوات الميلاد والتخرج تظهر غالبًا في الحسابات، وهي من أول ما يُجرَّب عند التخمين.")
     if found_sequence:
         score -= 20
         add("red", "Contains an easy sequence -> " + found_sequence,
@@ -349,7 +365,7 @@ def analyze(password):
         filename, label, points = WORDLISTS[key]
         score -= points
         add("red", "Contains " + label + " -> " + word,
-            "تحتوي كلمة المرور على " + ARABIC_LABELS[key] + " (" + word + ").")
+            "تحتوي كلمة المرور على " + ARABIC_LABELS[key] + " (" + word + "). " + WHY[key])
         already_counted.add(word)
     if found_keyboard:
         score -= 30
@@ -378,10 +394,12 @@ def analyze(password):
                 "السنة " + found_year + " هي سنة فوز النادي ببطولة، ويستخدمها المشجعون كثيرًا.")
 
     if (found_name or found_words or found_keyboard) and found_year:
+        word = found_name or (found_keyboard[1] if found_keyboard else None) or list(found_words.values())[0]
         add("red", "A personal word + a year together = very easy to guess",
-            "الجمع بين كلمة شخصية وسنة يجعل كلمة المرور سهلة التخمين جدًا.")
+            "الجمع بين (" + word + ") والسنة (" + found_year + ") يجعل كلمة المرور سهلة التخمين جدًا؛ "
+            "هذا أول نمط يجربه المخترق.")
 
-    # ===== Data breach check (Have I Been Pwned) =====
+    # data breach check (Have I Been Pwned)
     pwned = check_pwned(password)
     if pwned:
         score -= 50
@@ -392,7 +410,7 @@ def analyze(password):
         add("yellow", "Breach check skipped (no internet)",
             "تعذّر فحص التسريبات لعدم توفر اتصال بالإنترنت.")
 
-    # ===== Time to crack =====
+    # time to crack
     known_parts = []
     if found_name: known_parts.append((found_name, 40_000))
     for word in found_words.values(): known_parts.append((word, 1_000))
@@ -402,7 +420,7 @@ def analyze(password):
     if found_keyboard: known_parts.append((found_keyboard[0], 10_000))
     crack_seconds = estimate_crack_seconds(password, known_parts, pwned)
 
-    # ===== Blue info: standards that relate to this password =====
+    # blue info: standards that relate to this password
     if length < 15:
         add("blue", "NIST: minimum 8, recommended 15 characters",
             "المعيار العالمي (NIST) يشترط 8 أحرف على الأقل ويوصي بـ15 حرفًا، "
@@ -412,7 +430,7 @@ def analyze(password):
             "وفق إطار الأمن السيبراني للبنك المركزي السعودي (ساما)، يُقفل الحساب البنكي "
             "بعد 3 محاولات خاطئة، لذا قد تؤدي لغة لوحة المفاتيح الخاطئة إلى قفل الحساب.")
 
-    # ===== Final score =====
+    # final score
     score = max(score, 0)
     color, level_ar = level_for(score)
     if score >= 70:
@@ -424,7 +442,7 @@ def analyze(password):
             "length": length, "findings": findings}
 
 
-# ===== Command line mode =====
+# command line mode
 if __name__ == "__main__":
     password = input("Enter your password: ")
     result = analyze(password)
