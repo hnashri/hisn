@@ -35,6 +35,7 @@ if st.session_state.page == "welcome":
       <h1>حصن</h1>
       <h3>كلمة مرورك، هل هي آمنة فعلًا؟</h3>
       <p>حصن يفحصها كما يفكر المخترق العربي.</p>
+      <p style="font-size:14px; opacity:.7">🔒 لا يحفظ حصن كلمة المرور ولا يسجّلها.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -48,6 +49,7 @@ if st.session_state.page == "welcome":
 else:
     st.title("حصن")
     password = st.text_input("كلمة المرور", type="password")
+    st.caption("🔒 لا يحفظ حصن كلمة المرور ولا يسجّلها.")
 
     if st.button("افحص") and password:
         result = analyze(password)
