@@ -53,6 +53,8 @@ else:
     st.title("حصن")
     password = st.text_input("كلمة المرور", type="password")
     st.caption("لا يحفظ حصن كلمة المرور ولا يسجّلها.")
+    # this is a demo online so i tell people to try a similar password not their real one
+    st.caption("هذه نسخة تجريبية، جرّب كلمة مرور مشابهة لكلمتك وليست كلمتك الحقيقية.")
 
     if st.button("افحص") and password:
         result = analyze(password)
