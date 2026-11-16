@@ -15,7 +15,7 @@ Hisn checks passwords the way an attacker in Saudi Arabia would guess them.
 
 | | Example | What Hisn sees |
 |---|---|---|
-| Arabic names (35k+) | `Sara@2005` | name + year |
+| Arabic and Muslim names (about 13.6k names, 35k spellings) | `Sara@2005` | name + year |
 | Arabizi (7 = ح, 3 = ع ...) | `A7med`, `3bdullah`, `3omar` | Ahmed, Abdullah, Omar |
 | Hijri and Gregorian years | `1426`, `2008`, `Sara05` | a Hijri year, a Gregorian year, a short year |
 | Full birth dates | `01051426` | day + month + year |
@@ -39,7 +39,7 @@ It also shows:
 
 ## How the score works
 
-1. Every part Hisn finds (a name, a year, a club...) counts as **one pick from a list**, using the real size of that list. A name is one guess out of 35k names, not 5 random letters.
+1. Every part Hisn finds (a name, a year, a club...) counts as **one pick from a list**, using the real size of that list. A name is one guess out of about 35k name spellings, not 5 random letters.
 2. The rest of the password is guessed character by character (English letters, Arabic letters, digits and symbols).
 3. The time is shown for 3 attacks:
    - **online**, where the site limits tries (100 per hour)
